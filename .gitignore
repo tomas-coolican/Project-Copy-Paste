@@ -1,0 +1,26 @@
+# Node
+node_modules/
+dist/
+.env
+.env.local
+
+# .NET
+bin/
+obj/
+.vs/
+*.user
+*.suo
+
+# Visual Studio Code
+.vscode/
+
+# Visual Studio
+.idea/
+
+# Logs
+*.log
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
