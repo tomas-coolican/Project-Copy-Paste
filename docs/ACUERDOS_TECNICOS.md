@@ -1,7 +1,7 @@
 # Acuerdos técnicos: Gestión de Vuelos y Reservas
 
 > Programación IV · TP Integrador · Repositorio `Project-Copy-Paste` · Archivo: `docs/ACUERDOS_TECNICOS.md`
-> **Versión 0.3 (borrador para revisión del grupo)** · 2026-11-07
+> **Versión 0.4** · 2026-11-07
 
 ## Índice
 
@@ -47,18 +47,19 @@ Este documento es la referencia técnica compartida de los cuatro integrantes. S
 
 - Cubre: tecnologías, estructura del repo, trabajo de cada integrante, contratos de la API, Git, integración y decisiones pendientes.
 - No cubre: especificaciones empresariales ni infraestructura de producción. Es un proyecto académico: se prioriza que funcione, sin sobrearquitecturar.
-- `[Confirmado]` Todos los integrantes deben poder explicar las decisiones técnicas en la defensa oral.
-- `[Confirmado]` No se agregan dependencias sin justificarlas ante el grupo.
+- Todos los integrantes deben poder explicar las decisiones técnicas en la defensa oral.
+- No se agregan dependencias sin justificarlas ante el grupo.
 
 ### 1.2 Cómo interpretar las etiquetas
 
-| Etiqueta       | Significado                                                                                                                               |
-| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `[Confirmado]` | Ya establecido por el grupo o por la consigna. Se cumple sin discusión.                                                                   |
-| `[Propuesto]`  | Recomendación lista para discutir. **No es un acuerdo** hasta que el grupo la apruebe.                                                    |
-| `[Pendiente]`  | Falta una definición del equipo. Se marca con ⚠️ y un código (por ejemplo, **D5**) que remite a la [sección 7](#7-decisiones-pendientes). |
+| Etiqueta      | Significado                                                                                                                               |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `[Propuesto]` | Recomendación lista para discutir. **No es un acuerdo** hasta que el grupo la apruebe.                                                    |
+| `[Pendiente]` | Falta una definición del equipo. Se marca con ⚠️ y un código (por ejemplo, **D5**) que remite a la [sección 7](#7-decisiones-pendientes). |
 
-Cómo cambiar el estado de algo: se abre un PR que modifique este documento (`docs(acuerdos): ...`), se avisa al grupo y, con la aprobación, la etiqueta pasa a `[Confirmado]`.
+Lo que no lleva etiqueta se considera confirmado.
+
+Cómo cambiar el estado de algo: se abre un PR que modifique este documento (`docs(acuerdos): ...`), se avisa al grupo y, con la aprobación, se quita la etiqueta y queda confirmado.
 
 ### 1.3 Equipo y módulos
 
@@ -69,7 +70,7 @@ Cómo cambiar el estado de algo: se abre un PR que modifique este documento (`do
 | 3          | Alex Ramírez    | Pasajeros y reservas   | `feature/reservas` | [3.3](#33-alex-ramírez-pasajeros-y-reservas)      |
 | 4          | Tomás Coolican  | Frontend e integración | `feature/frontend` | [3.4](#34-tomás-coolican-frontend-e-integración)  |
 
-`[Confirmado]` Este reparto de responsabilidades está acordado.
+Este reparto de responsabilidades está acordado.
 
 ---
 
@@ -77,36 +78,34 @@ Cómo cambiar el estado de algo: se abre un PR que modifique este documento (`do
 
 ### 2.1 Stack general
 
-| Área         | Tecnología                            | Estado                   | Nota                                     |
-| ------------ | ------------------------------------- | ------------------------ | ---------------------------------------- |
-| Frontend     | React                                 | `[Confirmado]`           |                                          |
-| Frontend     | JavaScript (no TypeScript)            | `[Confirmado]`           |                                          |
-| Frontend     | Tailwind CSS                          | `[Confirmado]`           | Estilos                                  |
-| Frontend     | React Hook Form                       | `[Confirmado]`           | Formularios y validación                 |
-| Frontend     | Axios                                 | `[Confirmado]`           | Peticiones HTTP                          |
-| Frontend     | Vite                                  | `[Propuesto]`            | Herramienta de desarrollo y build        |
-| Frontend     | React Router                          | `[Propuesto]`            | La consigna admite React Router o Wouter |
-| Frontend     | Context API (solo para la sesión)     | `[Propuesto]`            |                                          |
-| Backend      | ASP.NET Core (`VuelosApi`)            | `[Confirmado]`           |                                          |
-| Backend      | Entity Framework Core con migraciones | `[Confirmado]`           |                                          |
-| Backend      | JWT para autenticación                | `[Confirmado]`           |                                          |
-| Backend      | Swagger y CORS                        | `[Confirmado]`           | Exigidos por la consigna                 |
-| Backend      | Proveedor de base de datos            | ⚠️ `[Pendiente]` **D13** |                                          |
-| Comunicación | API REST con JSON                     | `[Confirmado]`           |                                          |
+| Área         | Tecnología                            | Estado                   |
+| ------------ | ------------------------------------- | ------------------------ |
+| Frontend     | React                                 |                          |
+| Frontend     | JavaScript (no TypeScript)            |                          |
+| Frontend     | Tailwind CSS                          |                          |
+| Frontend     | React Hook Form                       |                          |
+| Frontend     | Axios                                 |                          |
+| Frontend     | Vite                                  |                          |
+| Frontend     | React Router                          |                          |
+| Frontend     | Context API (solo para la sesión)     |                          |
+| Backend      | ASP.NET Core (`VuelosApi`)            |                          |
+| Backend      | Entity Framework Core con migraciones |                          |
+| Backend      | JWT para autenticación                |                          |
+| Backend      | Swagger y CORS                        |                          |
+| Backend      | Proveedor de base de datos            | ⚠️ `[Pendiente]` **D13** |
+| Comunicación | API REST con JSON                     |                          |
 
 ### 2.2 Dependencias del frontend
 
-| Tipo        | Paquetes                                                                                                                     | Estado         |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------- | -------------- |
-| Confirmadas | `react`, `react-dom`, `tailwindcss` (con su integración para Vite según la guía oficial vigente), `react-hook-form`, `axios` | `[Confirmado]` |
-| Propuestas  | `react-router`, `vite` (herramienta de desarrollo)                                                                           | `[Propuesto]`  |
-| No se usan  | TypeScript, librerías de esquemas de validación (Zod, Yup), Zustand, jwt-decode, dayjs y moment                              | `[Propuesto]`  |
+| Paquetes                                                                                |
+| --------------------------------------------------------------------------------------- |
+| `react`, `react-dom`, `tailwindcss`, `react-hook-form`, `axios`, `react-router`, `vite` |
 
 Cualquier dependencia nueva se justifica ante el grupo antes de agregarse.
 
 ### 2.3 Estructura del repositorio
 
-`[Propuesto]` El frontend se incorpora en una carpeta propia, sin interferir con `VuelosApi/`, que no se renombra.
+El frontend se incorpora en una carpeta propia, sin interferir con `VuelosApi/`, que no se renombra.
 
 ```
 Project-Copy-Paste/
@@ -131,7 +130,7 @@ El `.gitignore` debe cubrir como mínimo: `node_modules`, `dist`, `.env`, `bin`,
 | Clave del JWT                          | `user-secrets` o variable de entorno, sin subirla al repo                                       | `[Propuesto]`            | Ignacio     |
 | Proveedor de base de datos             | Debe poder levantarse en la máquina de los cuatro. Si `VuelosApi` ya lo define, se registra acá | ⚠️ `[Pendiente]` **D13** | Agustín     |
 
-`[Propuesto]` Pasos para levantar el proyecto (van también en el README):
+Pasos para levantar el proyecto:
 
 | Parte    | Pasos                                                                                            |
 | -------- | ------------------------------------------------------------------------------------------------ |
@@ -144,7 +143,7 @@ Cada vez que se integra una migración nueva en `develop`, todos aplican `dotnet
 
 Valen para Agustín, Ignacio y Alex.
 
-**Lo que exige la consigna** `[Confirmado]`:
+**Lo que exige la consigna**:
 
 - Arquitectura en capas: Controller → Service → Repository.
 - Inyección de dependencias por constructor.
@@ -153,7 +152,7 @@ Valen para Agustín, Ignacio y Alex.
 - Swagger, CORS y manejo de errores.
 - Al menos 2 entidades relacionadas (uno-a-muchos) y CRUD completo sobre al menos una.
 
-**Carpetas** `[Propuesto]`: se organiza por capa y cada entidad tiene sus propios archivos, así cada integrante trabaja en archivos distintos.
+**Carpetas**: se organiza por capa y cada entidad tiene sus propios archivos, así cada integrante trabaja en archivos distintos.
 
 ```
 VuelosApi/
@@ -168,7 +167,7 @@ VuelosApi/
 └── Program.cs
 ```
 
-**Reglas de capas** `[Propuesto]`:
+**Reglas de capas**:
 
 | Capa       | Hace                                         | No hace                                             |
 | ---------- | -------------------------------------------- | --------------------------------------------------- |
@@ -212,7 +211,7 @@ Cada subsección tiene el mismo orden: responsabilidades, qué implementar, endp
 
 ### 3.1 Agustín Cabrera: vuelos y base de datos
 
-**Responsabilidades** `[Confirmado]`:
+**Responsabilidades**:
 
 - Entidades `Vuelo` y `Asiento` y sus relaciones.
 - Configuración de EF Core y migraciones.
@@ -237,7 +236,7 @@ Campos derivados del contrato `[Propuesto]`:
 | `Vuelo`   | `Id`, `Codigo`, `Origen`, `Destino`, `FechaSalida`, `FechaLlegada`, `Precio` |
 | `Asiento` | `Id`, `VueloId`, `Numero` y, según **D5**, un indicador de disponibilidad    |
 
-**Endpoints** `[Confirmado]` (los permisos son `[Propuesto]`):
+**Endpoints** (los permisos son `[Propuesto]`):
 
 | Endpoint                  | Acceso            | Nota                                          |
 | ------------------------- | ----------------- | --------------------------------------------- |
@@ -249,7 +248,7 @@ Campos derivados del contrato `[Propuesto]`:
 
 **Reglas de negocio:**
 
-- `[Confirmado]` **No se puede reducir la capacidad de un vuelo por debajo de la cantidad de reservas existentes.** Si se intenta, el `PUT` responde `409` con un mensaje claro (ejemplo en [4.4](#44-formato-de-errores)).
+- **No se puede reducir la capacidad de un vuelo por debajo de la cantidad de reservas existentes.** Si se intenta, el `PUT` responde `409` con un mensaje claro (ejemplo en [4.4](#44-formato-de-errores)).
 - ⚠️ `[Pendiente]` **D6**: cómo se cuentan las "reservas existentes" (todas o solo las activas), y qué asientos se pueden quitar al reducir la capacidad.
 - `[Propuesto]` Validaciones del DTO: campos obligatorios, llegada posterior a salida, precio no negativo y capacidad mayor que cero.
 
@@ -262,17 +261,17 @@ Campos derivados del contrato `[Propuesto]`:
 
 **Dependencias con otros módulos:**
 
-| Con     | Qué                                                                                                                                  | Estado         |
-| ------- | ------------------------------------------------------------------------------------------------------------------------------------ | -------------- |
-| Alex    | La regla de capacidad necesita contar las reservas de un vuelo. Alex expone esa consulta en su Repository y el `VueloService` la usa | `[Propuesto]`  |
-| Alex    | Disponibilidad de asientos: quién la actualiza al reservar y cancelar                                                                | ⚠️ **D5**      |
-| Alex    | Restricción para impedir dos reservas activas sobre el mismo asiento: requiere una migración                                         | `[Propuesto]`  |
-| Ignacio | `[Authorize(Roles = ...)]` con los roles definidos en [3.2](#32-ignacio-giménez-usuarios-y-seguridad)                                | `[Confirmado]` |
-| Tomás   | Puerto del API, origen de CORS, datos de prueba y formato exacto de las fechas con `Z` (ver [4.2](#42-fechas-e-identificadores))     | `[Propuesto]`  |
+| Con     | Qué                                                                                                                                  | Estado        |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------- |
+| Alex    | La regla de capacidad necesita contar las reservas de un vuelo. Alex expone esa consulta en su Repository y el `VueloService` la usa | `[Propuesto]` |
+| Alex    | Disponibilidad de asientos: quién la actualiza al reservar y cancelar                                                                | ⚠️ **D5**     |
+| Alex    | Restricción para impedir dos reservas activas sobre el mismo asiento: requiere una migración                                         | `[Propuesto]` |
+| Ignacio | `[Authorize(Roles = ...)]` con los roles definidos en [3.2](#32-ignacio-giménez-usuarios-y-seguridad)                                |               |
+| Tomás   | Puerto del API, origen de CORS, datos de prueba y formato exacto de las fechas con `Z` (ver [4.2](#42-fechas-e-identificadores))     | `[Propuesto]` |
 
 ### 3.2 Ignacio Giménez: usuarios y seguridad
 
-**Responsabilidades** `[Confirmado]`:
+**Responsabilidades**:
 
 - Entidad `Usuario`.
 - Registro y login.
@@ -292,7 +291,7 @@ Campos derivados del contrato `[Propuesto]`:
 | DTOs         | `DTOs/Auth/`: registro, login y respuesta de autenticación (ver [4.5](#45-estructuras-json)) |
 | Program.cs   | Bloque de configuración de JWT y de Swagger con Bearer                                       |
 
-**Endpoints** `[Confirmado]`:
+**Endpoints**:
 
 | Endpoint                  | Acceso  | Nota                                                             |
 | ------------------------- | ------- | ---------------------------------------------------------------- |
@@ -316,7 +315,7 @@ Campos derivados del contrato `[Propuesto]`:
 
 **Roles y permisos:**
 
-- `[Confirmado]` Los roles son **Administrador** y **Usuario**.
+- Los roles son **Administrador** y **Usuario**.
 - `[Propuesto]` Los valores se escriben exactamente así, con esas mayúsculas, en el token, en `[Authorize(Roles = ...)]` y en el frontend. Si alguien escribe distinto, la autorización falla sin avisar.
 - `[Propuesto]` La seguridad real está en el backend. Ocultar botones en el frontend es solo experiencia de usuario.
 
@@ -342,7 +341,7 @@ Matriz de permisos `[Propuesto]`:
 
 ### 3.3 Alex Ramírez: pasajeros y reservas
 
-**Responsabilidades** `[Confirmado]`:
+**Responsabilidades**:
 
 - Entidades `Pasajero` y `Reserva`, y sus relaciones con vuelos y usuarios.
 - Repository, Service y Controller.
@@ -360,7 +359,7 @@ Matriz de permisos `[Propuesto]`:
 | Controllers  | `ReservasController`                                                     |
 | DTOs         | `DTOs/Reservas/`: respuesta y creación (ver [4.5](#45-estructuras-json)) |
 
-**Endpoints** `[Confirmado]` (los permisos son `[Propuesto]`):
+**Endpoints** (los permisos son `[Propuesto]`):
 
 | Endpoint                    | Acceso                              | Nota                                 |
 | --------------------------- | ----------------------------------- | ------------------------------------ |
@@ -390,16 +389,16 @@ Matriz de permisos `[Propuesto]`:
 
 ### 3.4 Tomás Coolican: frontend e integración
 
-**Responsabilidades** `[Confirmado]`:
+**Responsabilidades**:
 
 - React: listado y detalle de vuelos, registro y login, interfaz de reservas y panel de administración.
 - Consumo de la API con Axios y manejo de JWT.
 - Rutas protegidas, validaciones, y estados de carga y error.
 - Integración del frontend con el backend real.
 
-**Tecnologías** `[Confirmado]`: React, JavaScript, Tailwind CSS, React Hook Form y Axios. `[Propuesto]` React Router y Context API.
+**Tecnologías**: React, JavaScript, Tailwind CSS, React Hook Form, Axios, React Router y Context API.
 
-**Estructura de carpetas** `[Propuesto]`:
+**Estructura de carpetas**:
 
 ```
 frontend/src/
@@ -467,7 +466,7 @@ frontend/src/
 
 Esta es la referencia para comunicarse entre módulos.
 
-`[Confirmado]` Los **endpoints** son los de las secciones 3.1 a 3.3. Las convenciones y estructuras JSON de esta sección son `[Propuesto]` hasta que el grupo las apruebe, salvo lo indicado, y **ninguna está implementada todavía**.
+Los **endpoints** son los de las secciones 3.1 a 3.3. Las convenciones y estructuras JSON de esta sección son `[Propuesto]` hasta que el grupo las apruebe, salvo lo indicado, y **ninguna está implementada todavía**.
 
 `[Propuesto]` Regla de cambio: un cambio de contrato se hace primero por PR a este documento, con aviso al grupo, y recién después se toca el código.
 
@@ -486,7 +485,7 @@ Esta es la referencia para comunicarse entre módulos.
 
 **Identificadores** `[Propuesto]`: enteros (`int`), que es el valor por defecto de EF. No hace falta Guid.
 
-**Fechas** `[Confirmado]`: se trabaja siempre en **UTC** y se convierte solo al mostrar.
+**Fechas**: se trabaja siempre en **UTC** y se convierte solo al mostrar.
 
 | Dónde                                            | Qué se hace                                                                                                |
 | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
@@ -677,14 +676,14 @@ El `usuarioId` no viaja: el backend lo toma del token.
 
 ### 5.1 Ramas
 
-| Rama               | Propósito                                                    | Responsable | Estado         |
-| ------------------ | ------------------------------------------------------------ | ----------- | -------------- |
-| `main`             | Versión estable. **No se trabaja directamente sobre `main`** | Todos       | `[Confirmado]` |
-| `develop`          | Rama de integración                                          | Todos       | `[Confirmado]` |
-| `feature/vuelos`   | Vuelos y base de datos (reemplaza a `feature/backend`)       | Agustín     | `[Confirmado]` |
-| `feature/auth`     | Autenticación y seguridad                                    | Ignacio     | `[Confirmado]` |
-| `feature/reservas` | Pasajeros y reservas                                         | Alex        | `[Confirmado]` |
-| `feature/frontend` | Frontend e integración                                       | Tomás       | `[Confirmado]` |
+| Rama               | Propósito                                                    | Responsable |
+| ------------------ | ------------------------------------------------------------ | ----------- |
+| `main`             | Versión estable. **No se trabaja directamente sobre `main`** | Todos       |
+| `develop`          | Rama de integración                                          | Todos       |
+| `feature/vuelos`   | Vuelos y base de datos (reemplaza a `feature/backend`)       | Agustín     |
+| `feature/auth`     | Autenticación y seguridad                                    | Ignacio     |
+| `feature/reservas` | Pasajeros y reservas                                         | Alex        |
+| `feature/frontend` | Frontend e integración                                       | Tomás       |
 
 - `[Propuesto]` Cada integrante trae `develop` a su rama con frecuencia, al menos cada 2 o 3 días y antes de abrir un PR, para evitar conflictos grandes.
 - `[Propuesto]` `main` y `develop` se protegen: solo aceptan cambios por PR, con al menos 1 aprobación de otro integrante. Revisar código ajeno ayuda a que todos puedan explicar el proyecto.
@@ -751,7 +750,7 @@ Ejemplos: `feat(auth): agregar login con JWT` · `fix(reservas): validar asiento
 
 ### 6.4 Checklist de entrega
 
-`[Confirmado]` Rúbrica de la consigna. Para aprobar deben cumplirse todos los mínimos:
+Rúbrica de la consigna. Para aprobar deben cumplirse todos los mínimos:
 
 - [ ] Backend por capas: Controller, Service y Repository, con DI por constructor.
 - [ ] EF Core con migraciones y al menos 2 entidades relacionadas.
