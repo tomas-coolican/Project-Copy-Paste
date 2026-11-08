@@ -32,7 +32,8 @@ public class AppDbContext : DbContext
 
         modelo.Entity<Reserva>()
             .HasIndex(r => r.AsientoId)
-            .IsUnique();
+            .IsUnique()
+            .HasFilter("[Estado] = 0"); // Solo las reservas Confirmadas (0) bloquean el asiento
 
         modelo.Entity<Vuelo>()
             .HasMany(v => v.Asientos)
