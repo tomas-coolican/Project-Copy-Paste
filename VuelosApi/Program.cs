@@ -20,7 +20,10 @@ builder.Services.AddScoped(typeof(Repository<>));
 // Servicios de la aplicación
 builder.Services.AddScoped<VuelosService>();
 builder.Services.AddScoped<PasajerosService>();
-builder.Services.AddScoped<ReservasService>();
+builder.Services.AddScoped<IReservaService, ReservaService>();
+
+// Repositorio específico del módulo de reservas
+builder.Services.AddScoped<IReservaRepository, ReservaRepository>();
 
 var app = builder.Build();
 
