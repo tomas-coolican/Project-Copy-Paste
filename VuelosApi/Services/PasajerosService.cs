@@ -53,8 +53,11 @@ public class PasajerosService
             .FirstOrDefaultAsync(p => p.Id == id);
 
         if (pasajero == null) return false;
-        if (pasajero.Reservas.Any(r => r.Estado == Enums.EstadoReserva.Confirmada))
-            throw new InvalidOperationException("No se puede eliminar un pasajero que tiene reservas confirmadas.");
+        // Se conservan las reservas como historial. Como la relación utiliza
+        // DeleteBehavior.Restrict, no se puede eliminar un pasajero que tenga
+        // reservas asociadas, incluso si ya fueron canceladas.
+        if (pasajero.Reservas.Any())
+            throw new InvalidOperationException("No se puede eliminar un pasajero que tiene reservas asociadas.");
 
         _repositorio.Eliminar(pasajero);
         await _repositorio.GuardarCambiosAsync();

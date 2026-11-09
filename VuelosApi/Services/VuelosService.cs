@@ -21,6 +21,7 @@ public class VuelosService
     {
         var vuelos = await _repositorioVuelos.Consultar()
             .Include(v => v.Asientos)
+                .ThenInclude(a => a.Reservas)
             .ToListAsync();
 
         return vuelos.Select(ConvertirADTO).ToList();
@@ -30,6 +31,7 @@ public class VuelosService
     {
         var vuelo = await _repositorioVuelos.Consultar()
             .Include(v => v.Asientos)
+                .ThenInclude(a => a.Reservas)
             .FirstOrDefaultAsync(v => v.Id == id);
 
         return vuelo == null ? null : ConvertirADTO(vuelo);
