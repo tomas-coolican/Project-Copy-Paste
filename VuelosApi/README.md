@@ -1,33 +1,33 @@
 # VuelosApi - Sistema de gestión de vuelos
 
-API REST en ASP.NET Core 9, C#, Entity Framework Core y SQL Server. La estructura sigue el patrón utilizado en el ejemplo Panadería: Controllers, DTOs, Models, Repositories, Services, Config y Enums.
+API REST en ASP.NET Core 9, C#, Entity Framework Core y PostgreSQL (Supabase). La estructura sigue el patrón utilizado en el ejemplo Panadería: Controllers, DTOs, Models, Repositories, Services, Config y Enums.
 
 ## Requisitos
-- Visual Studio 2022 actualizado o .NET 9 SDK.
-- SQL Server Express o SQL Server Developer.
-- SQL Server Management Studio (opcional).
+- .NET 9 SDK (o Visual Studio 2022 actualizado).
+- Acceso a la base de datos del grupo en Supabase (PostgreSQL). No hace falta instalar nada de base de datos en tu máquina.
 
-## 1. Configurar SQL Server
-Abrir `appsettings.json` y revisar `ConexionSqlServer`.
+## 1. Configurar la conexión a Supabase
+`appsettings.json` trae la conexión con la contraseña como `[YOUR-PASSWORD]`. La contraseña real **no se sube al repo**: cada integrante carga la cadena completa en su máquina con user-secrets, desde la carpeta `VuelosApi`:
 
-Para SQL Server Express normalmente se utiliza:
-`Server=localhost\SQLEXPRESS;Database=VuelosUTN;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=true`
+```bash
+dotnet user-secrets set "ConnectionStrings:ConexionBaseDatos" "Host=aws-1-us-west-2.pooler.supabase.com;Port=5432;Database=postgres;Username=postgres.<ref>;Password=<contraseña>;SSL Mode=Require;Trust Server Certificate=true"
+```
 
-Para una instancia local predeterminada:
-`Server=localhost;Database=VuelosUTN;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=true`
+Los datos salen de Supabase: **Connect → Direct → Session pooler**. Agustín le pasa la contraseña al grupo por un canal privado.
 
-## 2. Restaurar paquetes y crear la base
+Alternativa: definir la variable de entorno `ConnectionStrings__ConexionBaseDatos`.
+
+## 2. Restaurar paquetes y aplicar migraciones
 Desde una terminal ubicada en la carpeta del proyecto:
 
 ```bash
 dotnet restore
 dotnet tool install --global dotnet-ef
-dotnet ef migrations add CrearBaseVuelos
 dotnet ef database update
 dotnet run
 ```
 
-Si ya tenés instalado `dotnet-ef`, no hace falta ejecutar la segunda línea.
+Si ya tenés instalado `dotnet-ef`, no hace falta ejecutar la segunda línea. Como la base es compartida, las migraciones las genera y aplica solo Agustín; el resto solo corre `dotnet run`.
 
 ## 3. Abrir Swagger
 Al ejecutar el proyecto, abrir la dirección HTTPS que informa la consola y agregar `/swagger`.
@@ -35,25 +35,27 @@ Al ejecutar el proyecto, abrir la dirección HTTPS que informa la consola y agre
 ## Endpoints principales
 
 ### Vuelos
-- `GET /api/vuelos` - listar vuelos.
-- `GET /api/vuelos/{id}` - obtener un vuelo.
+- `GET /api/vuelos` - listar vuelos (incluye `asientosDisponibles`).
+- `GET /api/vuelos/{id}` - detalle del vuelo con la lista de asientos y su disponibilidad.
 - `POST /api/vuelos` - crear vuelo y generar sus asientos.
-- `PUT /api/vuelos/{id}` - modificar datos y estado.
-- `DELETE /api/vuelos/{id}` - eliminar si no tiene reservas confirmadas.
+- `PUT /api/vuelos/{id}` - modificar el vuelo (mismo cuerpo que el POST; `cantidadAsientos` aplica la regla de capacidad).
+- `DELETE /api/vuelos/{id}` - eliminar si no tiene reservas (responde `204`).
 
-Ejemplo para crear vuelo:
+Ejemplo para crear o editar un vuelo:
 ```json
 {
-  "numeroVuelo": "AR100",
+  "codigo": "AR100",
   "origen": "Buenos Aires",
   "destino": "Cordoba",
-  "fechaSalida": "2027-03-10T08:00:00",
-  "fechaLlegada": "2027-03-10T09:30:00",
-  "capacidad": 30,
-  "precioBase": 85000,
-  "cantidadAsientosEjecutivos": 5
+  "fechaSalida": "2027-03-10T08:00:00Z",
+  "fechaLlegada": "2027-03-10T09:30:00Z",
+  "precio": 85000,
+  "cantidadAsientos": 30
 }
 ```
+Opcionales: `cantidadAsientosEjecutivos` (solo POST) y `estado` (solo PUT).
+
+Reglas de capacidad en el `PUT`: al subir se agregan asientos continuando la numeración; al bajar se quitan los últimos, y si alguno tiene reservas o hay más reservas activas que la nueva capacidad, responde `409`.
 
 ### Pasajeros
 - `GET /api/pasajeros`
@@ -103,7 +105,7 @@ Ejemplo:
 - **Controllers:** reciben las peticiones HTTP y devuelven respuestas.
 - **Services:** contienen las reglas del negocio.
 - **Repositories:** centralizan las operaciones de acceso a datos.
-- **Config/AppDbContext:** configura Entity Framework y las relaciones de SQL Server.
+- **Config/AppDbContext:** configura Entity Framework y las relaciones de la base de datos.
 - **Enums:** estados y categorías con valores definidos.
 
 ## Alcance de esta primera versión
