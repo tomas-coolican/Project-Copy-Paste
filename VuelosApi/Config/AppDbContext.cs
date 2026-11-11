@@ -23,6 +23,10 @@ public class AppDbContext : DbContext
             .HasIndex(v => v.NumeroVuelo)
             .IsUnique();
 
+        modelo.Entity<Usuario>()
+            .HasIndex(u => u.Email)
+            .IsUnique();
+
         modelo.Entity<Pasajero>()
             .HasIndex(p => p.DNI)
             .IsUnique();
