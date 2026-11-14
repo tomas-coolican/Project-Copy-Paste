@@ -5,11 +5,9 @@ namespace VuelosApi.Config;
 
 public static class AdminSeeder
 {
-    // Crea un administrador inicial solo si se configuraron ambos secretos.
-    // No modifica cuentas existentes ni permite elegir el rol desde el registro público.
-    public static async Task CrearAdministradorInicialAsync(
-        AppDbContext contexto,
-        IConfiguration configuracion)
+    // Crea el administrador si AdminSeed:Email y AdminSeed:Password están configurados
+    // y todavía no existe un usuario con ese email.
+    public static async Task CrearAdministradorInicialAsync(AppDbContext contexto, IConfiguration configuracion)
     {
         string? emailConfigurado = configuracion["AdminSeed:Email"];
         string? password = configuracion["AdminSeed:Password"];
@@ -18,22 +16,19 @@ public static class AdminSeeder
             return;
 
         if (password.Length < 12)
-            throw new InvalidOperationException("La contraseña inicial del administrador debe tener al menos 12 caracteres.");
+            throw new InvalidOperationException("La contraseña del administrador debe tener al menos 12 caracteres.");
 
         string email = emailConfigurado.Trim().ToLowerInvariant();
-        bool existe = await contexto.Usuarios.AnyAsync(u => u.Email == email);
-        if (existe)
+        if (await contexto.Usuarios.AnyAsync(u => u.Email == email))
             return;
 
-        var administrador = new Usuario
+        contexto.Usuarios.Add(new Usuario
         {
             Nombre = "Administrador",
             Email = email,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
             Rol = "Administrador"
-        };
-
-        contexto.Usuarios.Add(administrador);
+        });
         await contexto.SaveChangesAsync();
     }
 }

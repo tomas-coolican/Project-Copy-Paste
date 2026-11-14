@@ -1,12 +1,13 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
 namespace VuelosApi.Migrations
 {
     /// <inheritdoc />
-    public partial class AgregarUsuariosYAutenticacion : Migration
+    public partial class Inicial : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -15,13 +16,13 @@ namespace VuelosApi.Migrations
                 name: "Pasajeros",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Nombre = table.Column<string>(type: "nvarchar(60)", maxLength: 60, nullable: false),
-                    Apellido = table.Column<string>(type: "nvarchar(60)", maxLength: 60, nullable: false),
-                    DNI = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
-                    Email = table.Column<string>(type: "nvarchar(120)", maxLength: 120, nullable: false),
-                    Telefono = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: true)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Nombre = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
+                    Apellido = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
+                    DNI = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    Email = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: false),
+                    Telefono = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -32,12 +33,12 @@ namespace VuelosApi.Migrations
                 name: "Usuarios",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Nombre = table.Column<string>(type: "nvarchar(80)", maxLength: 80, nullable: false),
-                    Email = table.Column<string>(type: "nvarchar(120)", maxLength: 120, nullable: false),
-                    PasswordHash = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Rol = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Nombre = table.Column<string>(type: "character varying(80)", maxLength: 80, nullable: false),
+                    Email = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: false),
+                    PasswordHash = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    Rol = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -48,16 +49,16 @@ namespace VuelosApi.Migrations
                 name: "Vuelos",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    NumeroVuelo = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
-                    Origen = table.Column<string>(type: "nvarchar(80)", maxLength: 80, nullable: false),
-                    Destino = table.Column<string>(type: "nvarchar(80)", maxLength: 80, nullable: false),
-                    FechaSalida = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    FechaLlegada = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    Capacidad = table.Column<int>(type: "int", nullable: false),
-                    PrecioBase = table.Column<decimal>(type: "decimal(10,2)", precision: 10, scale: 2, nullable: false),
-                    Estado = table.Column<int>(type: "int", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    NumeroVuelo = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    Origen = table.Column<string>(type: "character varying(80)", maxLength: 80, nullable: false),
+                    Destino = table.Column<string>(type: "character varying(80)", maxLength: 80, nullable: false),
+                    FechaSalida = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    FechaLlegada = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    Capacidad = table.Column<int>(type: "integer", nullable: false),
+                    PrecioBase = table.Column<decimal>(type: "numeric(10,2)", precision: 10, scale: 2, nullable: false),
+                    Estado = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -68,11 +69,11 @@ namespace VuelosApi.Migrations
                 name: "Asientos",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Numero = table.Column<string>(type: "nvarchar(5)", maxLength: 5, nullable: false),
-                    Categoria = table.Column<int>(type: "int", nullable: false),
-                    VueloId = table.Column<int>(type: "int", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Numero = table.Column<string>(type: "character varying(5)", maxLength: 5, nullable: false),
+                    Categoria = table.Column<int>(type: "integer", nullable: false),
+                    VueloId = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -89,15 +90,15 @@ namespace VuelosApi.Migrations
                 name: "Reservas",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    FechaReserva = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    Estado = table.Column<int>(type: "int", nullable: false),
-                    PrecioPagado = table.Column<decimal>(type: "decimal(10,2)", precision: 10, scale: 2, nullable: false),
-                    UsuarioId = table.Column<int>(type: "int", nullable: false),
-                    PasajeroId = table.Column<int>(type: "int", nullable: false),
-                    VueloId = table.Column<int>(type: "int", nullable: false),
-                    AsientoId = table.Column<int>(type: "int", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    FechaReserva = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    Estado = table.Column<int>(type: "integer", nullable: false),
+                    PrecioPagado = table.Column<decimal>(type: "numeric(10,2)", precision: 10, scale: 2, nullable: false),
+                    UsuarioId = table.Column<int>(type: "integer", nullable: false),
+                    PasajeroId = table.Column<int>(type: "integer", nullable: false),
+                    VueloId = table.Column<int>(type: "integer", nullable: false),
+                    AsientoId = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -141,18 +142,18 @@ namespace VuelosApi.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Reservas_AsientoId_Confirmada",
+                name: "IX_Reservas_AsientoId",
                 table: "Reservas",
                 column: "AsientoId",
                 unique: true,
-                filter: "[Estado] = 0");
+                filter: "\"Estado\" = 0");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Reservas_PasajeroId_VueloId_Confirmada",
+                name: "IX_Reservas_PasajeroId_VueloId",
                 table: "Reservas",
                 columns: new[] { "PasajeroId", "VueloId" },
                 unique: true,
-                filter: "[Estado] = 0");
+                filter: "\"Estado\" = 0");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Reservas_UsuarioId",

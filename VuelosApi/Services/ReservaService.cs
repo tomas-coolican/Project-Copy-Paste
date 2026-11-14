@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Data.SqlClient;
 using VuelosApi.Dtos.Reserva;
+using Npgsql;
 using VuelosApi.Enums;
 using VuelosApi.Models;
 using VuelosApi.Repositories;
@@ -18,16 +18,9 @@ public class ReservaService : IReservaService
 
     public async Task<List<ReservaDTO>> ObtenerTodasAsync(int usuarioId, bool esAdministrador)
     {
-        List<Reserva> reservas;
-
-        if (esAdministrador)
-        {
-            reservas = await _repositorio.ObtenerTodasAsync();
-        }
-        else
-        {
-            reservas = await _repositorio.ObtenerPorUsuarioAsync(usuarioId);
-        }
+        var reservas = esAdministrador
+            ? await _repositorio.ObtenerTodasAsync()
+            : await _repositorio.ObtenerPorUsuarioAsync(usuarioId);
 
         return reservas.Select(ConvertirADTO).ToList();
     }
@@ -35,12 +28,11 @@ public class ReservaService : IReservaService
     public async Task<ReservaDTO?> ObtenerPorIdAsync(int id, int usuarioId, bool esAdministrador)
     {
         var reserva = await _repositorio.ObtenerPorIdAsync(id);
-
         if (reserva == null)
             return null;
 
         if (!esAdministrador && reserva.UsuarioId != usuarioId)
-            throw new UnauthorizedAccessException("No tenés permiso para consultar esta reserva.");
+            throw new UnauthorizedAccessException("No tenés permiso para ver esta reserva.");
 
         return ConvertirADTO(reserva);
     }
@@ -48,14 +40,12 @@ public class ReservaService : IReservaService
     public async Task<ReservaDTO> CrearAsync(CrearReservaDTO dto, int usuarioId)
     {
         if (usuarioId <= 0)
-            throw new UnauthorizedAccessException("No se pudo identificar al usuario autenticado.");
+            throw new UnauthorizedAccessException("No se pudo identificar al usuario.");
 
-        // 1. Verificar que el pasajero exista. El DTO actual recibe PasajeroId.
         var pasajero = await _repositorio.ObtenerPasajeroPorIdAsync(dto.PasajeroId);
         if (pasajero == null)
             throw new KeyNotFoundException("El pasajero indicado no existe.");
 
-        // 2. Verificar que el vuelo exista y se encuentre disponible para reservas.
         var vuelo = await _repositorio.ObtenerVueloPorIdAsync(dto.VueloId);
         if (vuelo == null)
             throw new KeyNotFoundException("El vuelo indicado no existe.");
@@ -66,23 +56,15 @@ public class ReservaService : IReservaService
         if (vuelo.FechaSalida <= DateTime.UtcNow)
             throw new InvalidOperationException("No se puede reservar un vuelo que ya salió.");
 
-        // 3. Verificar que el asiento exista y pertenezca al vuelo indicado.
         var asiento = await _repositorio.ObtenerAsientoPorIdYVueloAsync(dto.AsientoId, dto.VueloId);
         if (asiento == null)
-            throw new KeyNotFoundException("El asiento no existe o no pertenece al vuelo seleccionado.");
+            throw new KeyNotFoundException("El asiento no existe o no pertenece a ese vuelo.");
 
-        // 4. No permitir que el mismo asiento tenga dos reservas confirmadas.
-        bool asientoOcupado = await _repositorio.ExisteReservaActivaPorAsientoAsync(dto.AsientoId);
-        if (asientoOcupado)
-            throw new InvalidOperationException("El asiento ya tiene una reserva confirmada.");
+        if (await _repositorio.ExisteReservaActivaPorAsientoAsync(dto.AsientoId))
+            throw new InvalidOperationException("El asiento ya está reservado.");
 
-        // 5. Regla adoptada para este módulo: un pasajero no puede tener dos
-        // reservas confirmadas para el mismo vuelo, aunque seleccione otro asiento.
-        bool pasajeroYaReservo = await _repositorio.ExisteReservaActivaPorPasajeroYVueloAsync(
-            dto.PasajeroId, dto.VueloId);
-
-        if (pasajeroYaReservo)
-            throw new InvalidOperationException("El pasajero ya tiene una reserva confirmada para este vuelo.");
+        if (await _repositorio.ExisteReservaActivaPorPasajeroYVueloAsync(dto.PasajeroId, dto.VueloId))
+            throw new InvalidOperationException("El pasajero ya tiene una reserva para este vuelo.");
 
         decimal precio = vuelo.PrecioBase;
         if (asiento.Categoria == CategoriaAsiento.Ejecutivo)
@@ -105,22 +87,24 @@ public class ReservaService : IReservaService
         {
             await _repositorio.GuardarCambiosAsync();
         }
-        catch (DbUpdateException error) when (EsViolacionDeIndiceUnico(error))
+        catch (DbUpdateException error) when (
+            error.InnerException is PostgresException
+            {
+                SqlState: PostgresErrorCodes.UniqueViolation
+            })
         {
-            // Las comprobaciones previas cubren el flujo normal. Los índices únicos
-            // de SQL Server también protegen ante dos solicitudes simultáneas.
+            // Dos pedidos al mismo tiempo: el índice único de la base frena al segundo.
             throw new InvalidOperationException(
-                "El asiento o el pasajero ya tiene una reserva confirmada para este vuelo.", error);
+                "El asiento o el pasajero ya tiene una reserva para este vuelo.", error);
         }
 
         var reservaCreada = await _repositorio.ObtenerPorIdAsync(reserva.Id);
         return ConvertirADTO(reservaCreada ?? reserva);
-    }
+        }
 
     public async Task<bool> CancelarAsync(int id, int usuarioId, bool esAdministrador)
     {
         var reserva = await _repositorio.ObtenerPorIdAsync(id);
-
         if (reserva == null)
             return false;
 
@@ -130,8 +114,7 @@ public class ReservaService : IReservaService
         if (reserva.Estado == EstadoReserva.Cancelada)
             throw new InvalidOperationException("La reserva ya está cancelada.");
 
-        // Cancelación lógica: se conserva el registro y el asiento vuelve a
-        // considerarse disponible porque ya no tiene una reserva Confirmada.
+        // No se borra, solo cambia el estado. El asiento queda libre porque ya no hay una reserva confirmada.
         reserva.Estado = EstadoReserva.Cancelada;
         await _repositorio.GuardarCambiosAsync();
 
@@ -155,11 +138,5 @@ public class ReservaService : IReservaService
             AsientoId = reserva.AsientoId,
             NumeroAsiento = reserva.Asiento?.Numero ?? string.Empty
         };
-    }
-
-    private static bool EsViolacionDeIndiceUnico(DbUpdateException error)
-    {
-        return error.InnerException is SqlException sqlError
-            && (sqlError.Number == 2601 || sqlError.Number == 2627);
     }
 }

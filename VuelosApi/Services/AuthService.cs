@@ -24,8 +24,7 @@ public class AuthService
     {
         string email = dto.Email.Trim().ToLowerInvariant();
 
-        bool existe = await _contexto.Usuarios.AnyAsync(u => u.Email == email);
-        if (existe)
+        if (await _contexto.Usuarios.AnyAsync(u => u.Email == email))
             throw new InvalidOperationException("Ya existe un usuario registrado con ese email.");
 
         var usuario = new Usuario
@@ -33,8 +32,7 @@ public class AuthService
             Nombre = dto.Nombre.Trim(),
             Email = email,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
-            // El registro público nunca permite elegir el rol.
-            Rol = "Usuario"
+            Rol = "Usuario" // el rol no se elige desde el registro
         };
 
         _contexto.Usuarios.Add(usuario);
@@ -48,11 +46,7 @@ public class AuthService
         string email = dto.Email.Trim().ToLowerInvariant();
         var usuario = await _contexto.Usuarios.FirstOrDefaultAsync(u => u.Email == email);
 
-        if (usuario == null)
-            return null;
-
-        bool passwordCorrecta = BCrypt.Net.BCrypt.Verify(dto.Password, usuario.PasswordHash);
-        if (!passwordCorrecta)
+        if (usuario == null || !BCrypt.Net.BCrypt.Verify(dto.Password, usuario.PasswordHash))
             return null;
 
         return CrearRespuesta(usuario);
@@ -60,39 +54,29 @@ public class AuthService
 
     private AuthRespuestaDTO CrearRespuesta(Usuario usuario)
     {
-        string? clave = _configuracion["Jwt:Key"];
-        if (string.IsNullOrWhiteSpace(clave) || Encoding.UTF8.GetByteCount(clave) < 32)
-            throw new InvalidOperationException("Falta configurar Jwt:Key. Debe contener al menos 32 bytes y guardarse en User Secrets o una variable de entorno.");
-
+        string clave = _configuracion["Jwt:Key"]!;
         string issuer = _configuracion["Jwt:Issuer"] ?? "VuelosApi";
         string audience = _configuracion["Jwt:Audience"] ?? "VuelosApi";
-        int minutos = 60;
-        if (int.TryParse(_configuracion["Jwt:DuracionMinutos"], out int minutosConfigurados)
-            && minutosConfigurados > 0 && minutosConfigurados <= 1440)
-        {
-            minutos = minutosConfigurados;
-        }
+        int minutos = _configuracion.GetValue("Jwt:DuracionMinutos", 60);
 
         DateTime expira = DateTime.UtcNow.AddMinutes(minutos);
 
-        var claims = new List<Claim>
+        var claims = new[]
         {
-            // ReservasController obtiene primero el identificador desde el claim "Id".
             new Claim("Id", usuario.Id.ToString()),
-            new Claim(ClaimTypes.NameIdentifier, usuario.Id.ToString()),
             new Claim(ClaimTypes.Name, usuario.Nombre),
             new Claim(ClaimTypes.Email, usuario.Email),
-            // Claim estándar para que [Authorize(Roles = "...")] y IsInRole funcionen.
             new Claim(ClaimTypes.Role, usuario.Rol)
         };
 
-        var claveSeguridad = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(clave));
-        var credenciales = new SigningCredentials(claveSeguridad, SecurityAlgorithms.HmacSha256);
+        var credenciales = new SigningCredentials(
+            new SymmetricSecurityKey(Encoding.UTF8.GetBytes(clave)),
+            SecurityAlgorithms.HmacSha256);
+
         var token = new JwtSecurityToken(
             issuer: issuer,
             audience: audience,
             claims: claims,
-            notBefore: DateTime.UtcNow,
             expires: expira,
             signingCredentials: credenciales);
 

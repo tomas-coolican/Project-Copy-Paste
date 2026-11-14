@@ -53,9 +53,7 @@ public class PasajerosService
             .FirstOrDefaultAsync(p => p.Id == id);
 
         if (pasajero == null) return false;
-        // Se conservan las reservas como historial. Como la relación utiliza
-        // DeleteBehavior.Restrict, no se puede eliminar un pasajero que tenga
-        // reservas asociadas, incluso si ya fueron canceladas.
+        // Las reservas (incluso canceladas) quedan como historial, así que no se borra el pasajero
         if (pasajero.Reservas.Any())
             throw new InvalidOperationException("No se puede eliminar un pasajero que tiene reservas asociadas.");
 

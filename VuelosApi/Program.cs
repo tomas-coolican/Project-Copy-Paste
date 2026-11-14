@@ -42,7 +42,7 @@ builder.Services.AddSwaggerGen(opciones =>
 
 // Conexión a SQL Server, que es el proveedor configurado actualmente en el proyecto.
 builder.Services.AddDbContext<AppDbContext>(opciones =>
-    opciones.UseSqlServer(builder.Configuration.GetConnectionString("ConexionSqlServer")));
+    opciones.UseNpgsql(builder.Configuration.GetConnectionString("Supabase")));
 
 // Autenticación JWT: la clave se obtiene de User Secrets o variables de entorno.
 string? jwtKey = builder.Configuration["Jwt:Key"];
