@@ -21,7 +21,6 @@ public class VuelosService
     {
         var vuelos = await _repositorioVuelos.Consultar()
             .Include(v => v.Asientos)
-                .ThenInclude(a => a.Reservas)
             .ToListAsync();
 
         return vuelos.Select(ConvertirADTO).ToList();
@@ -31,7 +30,6 @@ public class VuelosService
     {
         var vuelo = await _repositorioVuelos.Consultar()
             .Include(v => v.Asientos)
-                .ThenInclude(a => a.Reservas)
             .FirstOrDefaultAsync(v => v.Id == id);
 
         return vuelo == null ? null : ConvertirADTO(vuelo);
@@ -39,10 +37,7 @@ public class VuelosService
 
     public async Task<VueloDTO> CrearAsync(CrearVueloDTO dto)
     {
-        DateTime salida = AUtc(dto.FechaSalida);
-        DateTime llegada = AUtc(dto.FechaLlegada);
-
-        if (llegada <= salida)
+        if (dto.FechaLlegada <= dto.FechaSalida)
             throw new InvalidOperationException("La fecha de llegada debe ser posterior a la salida.");
 
         if (dto.CantidadAsientosEjecutivos < 0 || dto.CantidadAsientosEjecutivos > dto.Capacidad)
@@ -59,8 +54,8 @@ public class VuelosService
             NumeroVuelo = dto.NumeroVuelo,
             Origen = dto.Origen,
             Destino = dto.Destino,
-            FechaSalida = salida,
-            FechaLlegada = llegada,
+            FechaSalida = dto.FechaSalida,
+            FechaLlegada = dto.FechaLlegada,
             Capacidad = dto.Capacidad,
             PrecioBase = dto.PrecioBase,
             Estado = EstadoVuelo.Programado
@@ -69,7 +64,7 @@ public class VuelosService
         await _repositorioVuelos.AgregarAsync(vuelo);
         await _repositorioVuelos.GuardarCambiosAsync();
 
-        // Asientos del vuelo: los primeros son ejecutivos y el resto turista
+        // Se generan automáticamente los asientos del vuelo.
         for (int i = 1; i <= dto.Capacidad; i++)
         {
             var asiento = new Asiento
@@ -93,16 +88,13 @@ public class VuelosService
         var vuelo = await _repositorioVuelos.ObtenerPorIdAsync(id);
         if (vuelo == null) return null;
 
-        DateTime salida = AUtc(dto.FechaSalida);
-        DateTime llegada = AUtc(dto.FechaLlegada);
-
-        if (llegada <= salida)
+        if (dto.FechaLlegada <= dto.FechaSalida)
             throw new InvalidOperationException("La fecha de llegada debe ser posterior a la salida.");
 
         vuelo.Origen = dto.Origen;
         vuelo.Destino = dto.Destino;
-        vuelo.FechaSalida = salida;
-        vuelo.FechaLlegada = llegada;
+        vuelo.FechaSalida = dto.FechaSalida;
+        vuelo.FechaLlegada = dto.FechaLlegada;
         vuelo.PrecioBase = dto.PrecioBase;
         vuelo.Estado = dto.Estado;
 
@@ -119,21 +111,12 @@ public class VuelosService
             .FirstOrDefaultAsync(v => v.Id == id);
 
         if (vuelo == null) return false;
-        // Las reservas canceladas también cuentan: se guardan como historial y la FK no deja borrar el vuelo
-        if (vuelo.Reservas.Any())
-            throw new InvalidOperationException("No se puede eliminar un vuelo que tiene reservas asociadas.");
+        if (vuelo.Reservas.Any(r => r.Estado == EstadoReserva.Confirmada))
+            throw new InvalidOperationException("No se puede eliminar un vuelo que tiene reservas confirmadas.");
 
         _repositorioVuelos.Eliminar(vuelo);
         await _repositorioVuelos.GuardarCambiosAsync();
         return true;
-    }
-
-    // Postgres (timestamptz) solo acepta fechas en UTC. Si llega sin zona horaria se toma como UTC.
-    private static DateTime AUtc(DateTime fecha)
-    {
-        return fecha.Kind == DateTimeKind.Unspecified
-            ? DateTime.SpecifyKind(fecha, DateTimeKind.Utc)
-            : fecha.ToUniversalTime();
     }
 
     private static VueloDTO ConvertirADTO(Vuelo vuelo)
