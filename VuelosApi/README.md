@@ -39,7 +39,7 @@ Al ejecutar el proyecto, abrir la dirección HTTPS que informa la consola y agre
 - `GET /api/vuelos/{id}` - obtener un vuelo.
 - `POST /api/vuelos` - crear vuelo y generar sus asientos.
 - `PUT /api/vuelos/{id}` - modificar datos y estado.
-- `DELETE /api/vuelos/{id}` - eliminar si no tiene reservas confirmadas.
+- `DELETE /api/vuelos/{id}` - eliminar solo si no tiene reservas asociadas (incluidas las canceladas, para conservar el historial).
 
 Ejemplo para crear vuelo:
 ```json
@@ -59,7 +59,7 @@ Ejemplo para crear vuelo:
 - `GET /api/pasajeros`
 - `GET /api/pasajeros/{id}`
 - `POST /api/pasajeros`
-- `DELETE /api/pasajeros/{id}`
+- `DELETE /api/pasajeros/{id}` - eliminar solo si no tiene reservas asociadas.
 
 Ejemplo:
 ```json
@@ -76,7 +76,7 @@ Ejemplo:
 - `GET /api/reservas`
 - `GET /api/reservas/{id}`
 - `POST /api/reservas`
-- `PUT /api/reservas/{id}/cancelar`
+- `DELETE /api/reservas/{id}` - cancelar una reserva propia (o cualquiera si el usuario es Administrador).
 
 Ejemplo:
 ```json
@@ -90,12 +90,12 @@ Ejemplo:
 ## Qué hace la lógica de negocio
 - Al crear un vuelo se generan automáticamente los asientos.
 - Los primeros asientos indicados se crean como Ejecutivos; el resto como Turista.
-- Una reserva solo se confirma si existen el pasajero, el vuelo y el asiento.
+- Una reserva solo se confirma si existen el pasajero, el vuelo y el asiento, y queda asociada al usuario autenticado mediante `UsuarioId`.
 - No se reservan vuelos cancelados, finalizados o que ya salieron.
-- Un asiento no puede tener dos reservas confirmadas.
+- Un asiento no puede tener dos reservas confirmadas. Un pasajero tampoco puede tener dos reservas confirmadas para el mismo vuelo.
 - La categoría Ejecutiva cuesta un 50% más que el precio base.
 - Cancelar una reserva libera el asiento para una nueva reserva.
-- No se elimina un vuelo ni un pasajero que tenga reservas confirmadas.
+- No se elimina un pasajero que tenga reservas asociadas. Para los vuelos, Agustín debe aplicar el mismo criterio en `VuelosService` porque las reservas históricas se conservan y sus claves foráneas usan `DeleteBehavior.Restrict`.
 
 ## Capas
 - **Models:** entidades que representan las tablas.

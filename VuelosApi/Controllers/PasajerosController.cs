@@ -39,7 +39,7 @@ public class PasajerosController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
-            return BadRequest(new { mensaje = ex.Message });
+            return Conflict(new { mensaje = ex.Message });
         }
     }
 
@@ -54,7 +54,7 @@ public class PasajerosController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
-            return BadRequest(new { mensaje = ex.Message });
+            return Conflict(new { mensaje = ex.Message });
         }
     }
 }

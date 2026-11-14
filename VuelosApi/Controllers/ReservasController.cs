@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using VuelosApi.Dtos.Reserva;
 using VuelosApi.Services;
@@ -6,55 +7,79 @@ namespace VuelosApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class ReservasController : ControllerBase
 {
-    private readonly ReservasService _servicio;
+    private readonly IReservaService _servicio;
 
-    public ReservasController(ReservasService servicio)
+    public ReservasController(IReservaService servicio)
     {
         _servicio = servicio;
     }
 
+    // El id del usuario sale del token (claim "Id"), nunca del body
+    private int UsuarioId => int.TryParse(User.FindFirst("Id")?.Value, out int id) ? id : 0;
+    private bool EsAdministrador => User.IsInRole("Administrador");
+
     [HttpGet]
     public async Task<IActionResult> ObtenerTodas()
     {
-        return Ok(await _servicio.ObtenerTodasAsync());
+        return Ok(await _servicio.ObtenerTodasAsync(UsuarioId, EsAdministrador));
     }
 
     [HttpGet("{id:int}")]
     public async Task<IActionResult> ObtenerPorId(int id)
     {
-        var reserva = await _servicio.ObtenerPorIdAsync(id);
-        if (reserva == null) return NotFound(new { mensaje = "Reserva no encontrada." });
-        return Ok(reserva);
+        try
+        {
+            var reserva = await _servicio.ObtenerPorIdAsync(id, UsuarioId, EsAdministrador);
+            if (reserva == null) return NotFound(new { mensaje = "Reserva no encontrada." });
+            return Ok(reserva);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
     }
 
     [HttpPost]
-    public async Task<IActionResult> Crear(CrearReservaDTO dto)
+    public async Task<IActionResult> Crear([FromBody] CrearReservaDTO dto)
     {
         try
         {
-            var reserva = await _servicio.CrearAsync(dto);
+            var reserva = await _servicio.CrearAsync(dto, UsuarioId);
             return CreatedAtAction(nameof(ObtenerPorId), new { id = reserva.Id }, reserva);
         }
-        catch (InvalidOperationException ex)
+        catch (KeyNotFoundException error)
         {
-            return BadRequest(new { mensaje = ex.Message });
+            return NotFound(new { mensaje = error.Message });
+        }
+        catch (InvalidOperationException error)
+        {
+            return Conflict(new { mensaje = error.Message });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Unauthorized();
         }
     }
 
-    [HttpPut("{id:int}/cancelar")]
+    [HttpDelete("{id:int}")]
     public async Task<IActionResult> Cancelar(int id)
     {
         try
         {
-            bool cancelada = await _servicio.CancelarAsync(id);
+            bool cancelada = await _servicio.CancelarAsync(id, UsuarioId, EsAdministrador);
             if (!cancelada) return NotFound(new { mensaje = "Reserva no encontrada." });
-            return Ok(new { mensaje = "Reserva cancelada correctamente." });
+            return NoContent();
         }
-        catch (InvalidOperationException ex)
+        catch (UnauthorizedAccessException)
         {
-            return BadRequest(new { mensaje = ex.Message });
+            return Forbid();
+        }
+        catch (InvalidOperationException error)
+        {
+            return Conflict(new { mensaje = error.Message });
         }
     }
 }
