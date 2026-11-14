@@ -81,6 +81,21 @@ builder.Services.AddScoped<IReservaService, ReservaService>();
 builder.Services.AddScoped<IReservaRepository, ReservaRepository>();
 builder.Services.AddScoped<AuthService>();
 
+// CORS: orígenes permitidos configurables. En desarrollo, Vite usa http://localhost:5173.
+var origenesPermitidos = builder.Configuration
+    .GetSection("Cors:AllowedOrigins")
+    .Get<string[]>() ?? new[] { "http://localhost:5173" };
+
+builder.Services.AddCors(opciones =>
+{
+    opciones.AddPolicy("FrontendPolicy", politica =>
+    {
+        politica.WithOrigins(origenesPermitidos)
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -88,6 +103,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseCors("FrontendPolicy");
 
 app.UseHttpsRedirection();
 app.UseAuthentication();
