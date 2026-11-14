@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using VuelosApi.Dtos.Reserva;
@@ -11,7 +10,6 @@ namespace VuelosApi.Controllers;
 [Authorize]
 public class ReservasController : ControllerBase
 {
-    private const string RolAdministrador = "Administrador";
     private readonly IReservaService _servicio;
 
     public ReservasController(IReservaService servicio)
@@ -19,31 +17,23 @@ public class ReservasController : ControllerBase
         _servicio = servicio;
     }
 
+    // El id del usuario sale del token (claim "Id"), nunca del body
+    private int UsuarioId => int.TryParse(User.FindFirst("Id")?.Value, out int id) ? id : 0;
+    private bool EsAdministrador => User.IsInRole("Administrador");
+
     [HttpGet]
     public async Task<IActionResult> ObtenerTodas()
     {
-        if (!IntentarObtenerUsuarioId(out int usuarioId))
-            return Unauthorized(new { mensaje = "El token no contiene un identificador de usuario válido." });
-
-        bool esAdministrador = User.IsInRole(RolAdministrador);
-        var reservas = await _servicio.ObtenerTodasAsync(usuarioId, esAdministrador);
-        return Ok(reservas);
+        return Ok(await _servicio.ObtenerTodasAsync(UsuarioId, EsAdministrador));
     }
 
     [HttpGet("{id:int}")]
     public async Task<IActionResult> ObtenerPorId(int id)
     {
-        if (!IntentarObtenerUsuarioId(out int usuarioId))
-            return Unauthorized(new { mensaje = "El token no contiene un identificador de usuario válido." });
-
         try
         {
-            bool esAdministrador = User.IsInRole(RolAdministrador);
-            var reserva = await _servicio.ObtenerPorIdAsync(id, usuarioId, esAdministrador);
-
-            if (reserva == null)
-                return NotFound(new { mensaje = "Reserva no encontrada." });
-
+            var reserva = await _servicio.ObtenerPorIdAsync(id, UsuarioId, EsAdministrador);
+            if (reserva == null) return NotFound(new { mensaje = "Reserva no encontrada." });
             return Ok(reserva);
         }
         catch (UnauthorizedAccessException)
@@ -55,12 +45,9 @@ public class ReservasController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Crear([FromBody] CrearReservaDTO dto)
     {
-        if (!IntentarObtenerUsuarioId(out int usuarioId))
-            return Unauthorized(new { mensaje = "El token no contiene un identificador de usuario válido." });
-
         try
         {
-            var reserva = await _servicio.CrearAsync(dto, usuarioId);
+            var reserva = await _servicio.CrearAsync(dto, UsuarioId);
             return CreatedAtAction(nameof(ObtenerPorId), new { id = reserva.Id }, reserva);
         }
         catch (KeyNotFoundException error)
@@ -80,17 +67,10 @@ public class ReservasController : ControllerBase
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Cancelar(int id)
     {
-        if (!IntentarObtenerUsuarioId(out int usuarioId))
-            return Unauthorized(new { mensaje = "El token no contiene un identificador de usuario válido." });
-
         try
         {
-            bool esAdministrador = User.IsInRole(RolAdministrador);
-            bool cancelada = await _servicio.CancelarAsync(id, usuarioId, esAdministrador);
-
-            if (!cancelada)
-                return NotFound(new { mensaje = "Reserva no encontrada." });
-
+            bool cancelada = await _servicio.CancelarAsync(id, UsuarioId, EsAdministrador);
+            if (!cancelada) return NotFound(new { mensaje = "Reserva no encontrada." });
             return NoContent();
         }
         catch (UnauthorizedAccessException)
@@ -101,19 +81,5 @@ public class ReservasController : ControllerBase
         {
             return Conflict(new { mensaje = error.Message });
         }
-    }
-
-    private bool IntentarObtenerUsuarioId(out int usuarioId)
-    {
-        // PanaderiaApi agrega el ID numérico en el claim "Id" y usa NameIdentifier para el nombre de usuario. Se conserva esa convención.
-        string? id = User.FindFirst("Id")?.Value;
-
-        // Compatibilidad con el acuerdo técnico si Alex decide guardar el ID numérico directamente en NameIdentifier.
-        if (string.IsNullOrWhiteSpace(id) || !int.TryParse(id, out usuarioId))
-        {
-            id = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        }
-
-        return int.TryParse(id, out usuarioId) && usuarioId > 0;
     }
 }
