@@ -1,1 +1,215 @@
 @import "tailwindcss";
+@import "@fontsource-variable/montserrat";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+
+/*
+ * Tokens de "El Tablero de Operaciones" (docs/DESIGN.md).
+ * Los componentes consumen roles, nunca hex, radios, sombras ni duraciones sueltos.
+ * No hay tema oscuro: las bandas `surface-ink` son una superficie, no un modo.
+ */
+@theme {
+  --color-*: initial;
+
+  --color-accent: #ff5200;
+  --color-accent-ink: #212322;
+  --color-surface: #ffffff;
+  --color-surface-tint: #eff8fa;
+  --color-surface-band: #badce6;
+  --color-surface-ink: #212322;
+  --color-ink: #212322;
+  --color-ink-muted: #4a4c4a;
+  --color-ink-faint: #636563;
+  --color-ink-inverse: #ffffff;
+  --color-ink-inverse-muted: #9db2b6;
+  --color-ink-inverse-strong: #c3d6da;
+  --color-line: rgba(33, 35, 34, 0.16);
+  --color-line-strong: rgba(33, 35, 34, 0.3);
+  --color-line-inverse: rgba(186, 220, 230, 0.14);
+  --color-line-inverse-strong: rgba(186, 220, 230, 0.3);
+  --color-focus: #212322;
+  --color-focus-inverse: #ffffff;
+  --color-transparent: transparent;
+  --color-current: currentColor;
+
+  --color-info: #1f5c6b;
+  --color-info-surface: #eff8fa;
+  --color-info-line: #b7d9df;
+  --color-info-inverse: #8fd3e0;
+  --color-success: #1e6b4e;
+  --color-success-surface: #eaf4ef;
+  --color-success-line: #b7dcc9;
+  --color-success-inverse: #8ad9b0;
+  --color-warning: #7a4e00;
+  --color-warning-surface: #fbf3e2;
+  --color-warning-line: #e5cfa3;
+  --color-warning-inverse: #f2c26b;
+  --color-danger: #a32a1e;
+  --color-danger-surface: #fbeae7;
+  --color-danger-line: #e8c0ba;
+  --color-danger-inverse: #ff9e90;
+
+  --font-sans: "Montserrat Variable", "Montserrat", "Segoe UI", Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", "Cascadia Mono", "Courier New", monospace;
+
+  /* Landing (escala fluida) */
+  --text-display: clamp(3rem, 6.4vw, 6rem);
+  --text-display--line-height: 0.92;
+  --text-display--font-weight: 700;
+  --text-display--letter-spacing: -0.04em;
+  --text-headline: clamp(2.4rem, 4.6vw, 4.2rem);
+  --text-headline--line-height: 1;
+  --text-headline--font-weight: 600;
+  --text-headline--letter-spacing: -0.04em;
+  --text-headline-board: clamp(3.4rem, 6vw, 5.4rem);
+  --text-headline-board--line-height: 0.9;
+  --text-headline-board--font-weight: 600;
+  --text-headline-board--letter-spacing: -0.04em;
+
+  /* Aplicación (escala fija) */
+  --text-app-page: 2rem;
+  --text-app-page--line-height: 1.1;
+  --text-app-page--font-weight: 700;
+  --text-app-page--letter-spacing: -0.03em;
+  --text-app-section: 1.5rem;
+  --text-app-section--line-height: 1.2;
+  --text-app-section--font-weight: 600;
+  --text-app-section--letter-spacing: -0.02em;
+  --text-app-title: 1.25rem;
+  --text-app-title--line-height: 1.2;
+  --text-app-title--font-weight: 600;
+  --text-app-title--letter-spacing: -0.02em;
+  --text-app-body: 1rem;
+  --text-app-body--line-height: 1.55;
+  --text-app-body--font-weight: 400;
+  --text-app-body--letter-spacing: 0;
+  --text-app-body-sm: 0.875rem;
+  --text-app-body-sm--line-height: 1.5;
+  --text-app-body-sm--font-weight: 400;
+  --text-app-body-sm--letter-spacing: 0;
+  --text-app-label: 0.75rem;
+  --text-app-label--line-height: 1.2;
+  --text-app-label--font-weight: 400;
+  --text-app-label--letter-spacing: 0.09em;
+  --text-app-data: 0.8125rem;
+  --text-app-data--line-height: 1.2;
+  --text-app-data--font-weight: 500;
+  --text-app-data--letter-spacing: -0.02em;
+  --text-app-data-lg: 1.25rem;
+  --text-app-data-lg--line-height: 1.2;
+  --text-app-data-lg--font-weight: 500;
+  --text-app-data-lg--letter-spacing: -0.03em;
+
+  --radius-*: initial;
+  --radius-control: 10px;
+  --radius-ticket: 16px;
+
+  --container-shell: 1240px;
+  --spacing-gutter: clamp(20px, 4vw, 56px);
+  --spacing-section: clamp(72px, 9vw, 120px);
+  --spacing-row: 24px;
+  --spacing-inline: 16px;
+  --spacing-control-x: 24px;
+  --spacing-control-x-sm: 17px;
+  --spacing-status-gap-sm: 8px;
+  --spacing-status-gap-md: 10px;
+
+  --size-control: 52px;
+  --size-control-sm: 44px;
+  --size-touch: 44px;
+  --size-status-dot-sm: 6px;
+  --size-status-dot-md: 7px;
+  --border-status: 1.5px;
+  --outline-focus-width: 2px;
+  --outline-focus-offset: 3px;
+
+  --shadow-*: initial;
+  --shadow-soft: 0 18px 30px -14px rgba(33, 35, 34, 0.22), 0 6px 12px -8px rgba(33, 35, 34, 0.12);
+  --shadow-pass: -12px 22px 40px -10px rgba(33, 35, 34, 0.28), -3px 8px 14px -6px rgba(33, 35, 34, 0.12);
+  --shadow-header: 0 1px 2px rgba(33, 35, 34, 0.06), 0 10px 24px rgba(33, 35, 34, 0.09);
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-state: 0.2s;
+  --duration-enter: 0.8s;
+  --duration-enter-slow: 1.4s;
+  --duration-reveal: 1s;
+  --stagger-row: 45ms;
+
+  --animate-skeleton: skeleton-pulse 1.4s var(--ease-out-expo) infinite alternate;
+  --animate-delayed-in: delayed-in 0s linear 300ms both;
+
+  --breakpoint-*: initial;
+  --breakpoint-sm: 620px;
+  --breakpoint-tbl: 760px;
+  --breakpoint-md: 900px;
+  --breakpoint-lg: 1100px;
+
+  @keyframes skeleton-pulse {
+    from { opacity: 0.55; }
+    to { opacity: 1; }
+  }
+
+  @keyframes delayed-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    overflow-x: clip;
+    background: var(--color-surface);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: var(--text-app-body);
+    line-height: var(--text-app-body--line-height);
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, p, li {
+    overflow-wrap: break-word;
+  }
+
+  ::selection {
+    background: var(--color-accent);
+    color: var(--color-accent-ink);
+  }
+
+  /* Foco: 2 px, excepción explícita a la regla de 1 px. */
+  :focus-visible {
+    outline: var(--outline-focus-width) solid var(--color-focus);
+    outline-offset: var(--outline-focus-offset);
+  }
+
+  [data-surface="ink"] :focus-visible,
+  [data-surface="ink"]:focus-visible {
+    outline-color: var(--color-focus-inverse);
+  }
+
+  .font-mono {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .animate-skeleton {
+    animation: none;
+    opacity: 0.7;
+  }
+}
