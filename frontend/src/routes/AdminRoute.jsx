@@ -14,7 +14,7 @@ export default function AdminRoute() {
     return (
       <div className="py-10">
         <ErrorMessage
-          error={{ status: 403 }}
+          error={{ status: 403, message: 'Esta sección es solo para administradores. Volvé al inicio para continuar.' }}
           action={
             <Button as={Link} to="/dashboard" variant="secondary" size="sm">
               Volver al inicio
