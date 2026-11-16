@@ -1,51 +1,76 @@
 # Project-Copy-Paste
 
-## Configuración local de autenticación
+API de vuelos y reservas (ASP.NET Core 9, Entity Framework Core y PostgreSQL en Supabase) con frontend en React.
 
-La API usa JWT y BCrypt. La clave JWT y la contraseña del administrador inicial **no se guardan en appsettings.json ni en Git**.
+## Puesta en marcha de la API
 
-Desde la carpeta `VuelosApi`:
+### Requisitos
+
+- .NET 9 SDK
+- Acceso a la base PostgreSQL del grupo (Supabase). Pedir la cadena de conexión a quien administra el proyecto.
+- Herramienta de migraciones: `dotnet tool install --global dotnet-ef --version 9.0.0`
+
+### 1. Configurar los secretos
+
+La API no arranca sin secretos y ninguno se guarda en Git. Desde la carpeta `VuelosApi`:
 
 ```powershell
 dotnet user-secrets init
-dotnet user-secrets set "Jwt:Key" ([Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(64)))
-dotnet user-secrets set "Jwt:Issuer" "VuelosApi"
-dotnet user-secrets set "Jwt:Audience" "VuelosApi"
-dotnet user-secrets set "Jwt:DuracionMinutos" "60"
+dotnet user-secrets set "Jwt:Key" "una-clave-de-al-menos-32-caracteres"
+dotnet user-secrets set "ConnectionStrings:Supabase" "Host=aws-0-us-west-2.pooler.supabase.com;Port=5432;Database=postgres;Username=postgres.<id-del-proyecto>;Password=<contraseña>;SSL Mode=Require;Trust Server Certificate=true"
 ```
 
-Para crear el administrador inicial, configurá también (con una contraseña propia, larga y única):
+`Jwt:Key` tiene que medir 32 bytes o más. Para generar una:
+
+```powershell
+[Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(64))
+```
+
+La cadena de conexión va en formato clave=valor (Npgsql no acepta el formato `postgresql://`). Con el pooler de Supabase el usuario es `postgres.<id-del-proyecto>`.
+
+### 2. Administrador inicial (opcional)
+
+Si querés un usuario administrador, configurá estos dos valores. Se crea una sola vez si el email no existe.
 
 ```powershell
 dotnet user-secrets set "AdminSeed:Email" "admin@vuelos.local"
-dotnet user-secrets set "AdminSeed:Password" "CAMBIAR_POR_UNA_CLAVE_SEGURA_DE_12_O_MAS_CARACTERES"
+dotnet user-secrets set "AdminSeed:Password" "una-clave-de-12-o-mas-caracteres"
 ```
 
-El administrador se crea una sola vez si ese email todavía no existe. Si no se configuran `AdminSeed:Email` y `AdminSeed:Password`, no se crea ningún administrador automáticamente.
+### 3. Vuelos de ejemplo (opcional)
 
-## Base de datos
-
-Este repositorio no traía migraciones de Entity Framework. Antes de ejecutar la API, desde `VuelosApi` generá la migración:
+Para cargar 3 vuelos con sus asientos:
 
 ```powershell
-dotnet ef migrations add AgregarUsuariosYAutenticacion
+dotnet user-secrets set "DatosDePrueba:Cargar" "true"
+```
+
+Solo se cargan si la tabla de vuelos está vacía, así que no duplica nada.
+
+### 4. Base de datos
+
+El repositorio ya incluye la migración `Inicial`. Desde `VuelosApi`:
+
+```powershell
 dotnet ef database update
 ```
 
-**Importante:** si la base `VuelosUTN` ya existe y tiene tablas/datos creados por otro mecanismo, no ejecutes `database update` sin revisar primero con el equipo y hacer una copia de seguridad. La migración inicial puede intentar crear tablas que ya existen. La migración debe aplicarse una sola vez sobre la base acordada.
+Si la base del grupo ya tiene las tablas, no hace falta correrlo. En caso de duda, consultar al equipo antes de aplicar migraciones sobre una base compartida.
 
-Si no tenés instalada la herramienta EF:
-
-```powershell
-dotnet tool install --global dotnet-ef --version 9.0.0
-```
-
-Luego restaurá y ejecutá:
+### 5. Ejecutar
 
 ```powershell
 dotnet restore
 dotnet run
 ```
+
+La API queda en `http://localhost:5000` y Swagger en `http://localhost:5000/swagger`. Para probar endpoints protegidos, hacer login en `/api/auth/login`, copiar el `token` y pegarlo en el botón Authorize.
+
+### Problemas comunes
+
+- `Configurá Jwt:Key...`: falta el secreto `Jwt:Key` o mide menos de 32 bytes.
+- `password authentication failed`: la contraseña o el usuario de la cadena de conexión no coinciden con los de Supabase.
+- Las carpetas `bin/` y `obj/` no se versionan. Si git las muestra como modificadas, hay que sacarlas del índice con `git rm -r --cached VuelosApi/obj`.
 
 ## Endpoints de autenticación
 
