@@ -5,6 +5,11 @@ export const ESTADO_VUELO = Object.freeze({
   3: 'Finalizado',
 });
 
+export const ESTADO_RESERVA = Object.freeze({
+  0: 'Confirmada',
+  1: 'Cancelada',
+});
+
 export const CATEGORIA_ASIENTO = Object.freeze({
   0: 'Turista',
   1: 'Ejecutivo',
@@ -45,6 +50,22 @@ export function adaptVuelo(dto) {
     precioBase: Number(dto.precioBase),
     estado: getEnumLabel(ESTADO_VUELO, dto.estado),
     estadoCodigo: dto.estado,
+  };
+}
+
+export function adaptReserva(dto) {
+  return {
+    id: dto.id,
+    fechaReserva: parseApiDate(dto.fechaReserva),
+    estado: getEnumLabel(ESTADO_RESERVA, dto.estado),
+    estadoCodigo: dto.estado,
+    precioPagado: Number(dto.precioPagado),
+    pasajeroId: dto.pasajeroId,
+    nombrePasajero: dto.nombrePasajero,
+    vueloId: dto.vueloId,
+    numeroVuelo: dto.numeroVuelo,
+    asientoId: dto.asientoId,
+    numeroAsiento: dto.numeroAsiento,
   };
 }
 

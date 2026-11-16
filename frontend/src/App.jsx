@@ -1,34 +1,18 @@
-import { BrowserRouter, Link, Route, Routes } from 'react-router-dom';
-import Button from './components/Button.jsx';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext.jsx';
-import useAuth from './hooks/useAuth.js';
 import AuthLayout from './layouts/AuthLayout.jsx';
+import DashboardLayout from './layouts/DashboardLayout.jsx';
 import PublicLayout from './layouts/PublicLayout.jsx';
+import AdminHomePage from './pages/AdminHomePage.jsx';
+import DashboardHomePage from './pages/DashboardHomePage.jsx';
 import LandingPage from './pages/LandingPage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
+import NotFoundPage from './pages/NotFoundPage.jsx';
 import RegistroPage from './pages/RegistroPage.jsx';
+import VueloDetallePage from './pages/VueloDetallePage.jsx';
+import VuelosPage from './pages/VuelosPage.jsx';
 import AdminRoute from './routes/AdminRoute.jsx';
 import ProtectedRoute from './routes/ProtectedRoute.jsx';
-
-// Provisorio: el dashboard (S4) reemplaza esta vista.
-function TableroProvisorio() {
-  const { user, logout } = useAuth();
-
-  return (
-    <section className="mx-auto w-[min(100%-(var(--spacing-gutter)*2),var(--container-shell))] py-16">
-      <h1 className="m-0 text-app-page font-bold">Hola, {user.nombre}</h1>
-      <p className="m-0 mt-2 text-ink-muted">Rol: {user.rol}. El dashboard llega en el tramo S4.</p>
-      <div className="mt-6 flex gap-3">
-        <Button variant="secondary" size="sm" onClick={logout}>
-          Cerrar sesión
-        </Button>
-        <Button as={Link} to="/admin" variant="secondary" size="sm">
-          Probar ruta de administración
-        </Button>
-      </div>
-    </section>
-  );
-}
 
 export default function App() {
   return (
@@ -37,16 +21,24 @@ export default function App() {
         <Routes>
           <Route element={<PublicLayout />}>
             <Route index element={<LandingPage />} />
-            <Route element={<ProtectedRoute />}>
-              <Route path="dashboard" element={<TableroProvisorio />} />
-              <Route element={<AdminRoute />}>
-                <Route path="admin" element={<TableroProvisorio />} />
-              </Route>
-            </Route>
+            <Route path="*" element={<NotFoundPage />} />
           </Route>
+
           <Route element={<AuthLayout />}>
             <Route path="login" element={<LoginPage />} />
             <Route path="registro" element={<RegistroPage />} />
+          </Route>
+
+          <Route element={<ProtectedRoute />}>
+            <Route element={<DashboardLayout />}>
+              <Route path="dashboard" element={<DashboardHomePage />} />
+              <Route path="dashboard/vuelos" element={<VuelosPage />} />
+              <Route path="dashboard/vuelos/:id" element={<VueloDetallePage />} />
+              <Route path="*" element={<NotFoundPage />} />
+              <Route element={<AdminRoute />}>
+                <Route path="admin" element={<AdminHomePage />} />
+              </Route>
+            </Route>
           </Route>
         </Routes>
       </AuthProvider>
