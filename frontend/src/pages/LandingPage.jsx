@@ -1,6 +1,5 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import vuelosApi from '../api/vuelosApi.js';
 import Closing from '../components/landing/Closing.jsx';
 import DeparturesBoard from '../components/landing/DeparturesBoard.jsx';
 import Features from '../components/landing/Features.jsx';
@@ -8,16 +7,15 @@ import Hero from '../components/landing/Hero.jsx';
 import SiteFooter from '../components/landing/SiteFooter.jsx';
 import StatsBand from '../components/landing/StatsBand.jsx';
 import TicketSection from '../components/landing/TicketSection.jsx';
-import useAsync from '../hooks/useAsync.js';
-import { primeroOperativo, proximasSalidas, resumirVuelos } from '../utils/vuelos.js';
+import useAuth from '../hooks/useAuth.js';
+import { DEMO_FLIGHTS, DEMO_HERO_FLIGHT, DEMO_NOW, DEMO_UPDATED_AT } from '../components/landing/sampleFlights.js';
 
 /**
- * Landing pública. Una sola lectura de GET /api/vuelos alimenta el hero, las cifras, el tablero
- * y el ticket destacado. Solo el tablero muestra error (con "Reintentar"); el resto se omite o
- * queda en "—" cuando no hay datos, así la página se ve completa con la API caída.
+ * Landing pública con cifras y vuelos ficticios del prototipo. La aplicación consume la API en
+ * sus secciones operativas, fuera de esta página de presentación.
  */
 export default function LandingPage() {
-  const { data: vuelos, error, loading, retrying, updatedAt, reload } = useAsync(vuelosApi.listar);
+  const { isAuthenticated } = useAuth();
   const { hash } = useLocation();
 
   // Al entrar con #seccion (recarga o enlace directo) el contenido aún no existía: ir a la ancla.
@@ -26,28 +24,18 @@ export default function LandingPage() {
     document.getElementById(decodeURIComponent(hash.slice(1)))?.scrollIntoView();
   }, [hash]);
 
-  const resumen = useMemo(() => (vuelos ? resumirVuelos(vuelos, updatedAt) : null), [vuelos, updatedAt]);
-  const destacado = useMemo(
-    () => (vuelos ? primeroOperativo(proximasSalidas(vuelos, updatedAt).filter((v) => v.estado === 'Programado')) : null),
-    [vuelos, updatedAt],
-  );
-
   return (
     <>
-      <Hero destacado={destacado} programados={resumen?.programados ?? null} actualizado={updatedAt} />
-      <StatsBand resumen={resumen} />
+      <Hero destacado={DEMO_HERO_FLIGHT} isAuthenticated={isAuthenticated} />
+      <StatsBand />
       <DeparturesBoard
-        vuelos={vuelos}
-        ahora={updatedAt}
-        actualizado={updatedAt}
-        loading={loading}
-        error={error}
-        retrying={retrying}
-        onRetry={reload}
+        vuelos={DEMO_FLIGHTS}
+        ahora={DEMO_NOW}
+        actualizado={DEMO_UPDATED_AT}
       />
-      <TicketSection vuelo={destacado} loading={loading && !vuelos} />
+      <TicketSection vuelo={DEMO_HERO_FLIGHT} />
       <Features />
-      <Closing />
+      <Closing isAuthenticated={isAuthenticated} />
       <SiteFooter />
     </>
   );

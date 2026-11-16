@@ -11,6 +11,7 @@ export default function ConfirmDialog({
   pendingLabel = 'Procesando…',
   pending = false,
   error,
+  errorTitle = 'No se pudo cancelar la reserva',
   onConfirm,
   onClose,
 }) {
@@ -63,7 +64,7 @@ export default function ConfirmDialog({
       </p>
       {summary && <div className="mt-4 rounded-control border border-line bg-surface-tint p-4">{summary}</div>}
       {error && (
-        <Alert tone="danger" title="No se pudo cancelar la reserva" className="mt-4">
+        <Alert tone="danger" title={errorTitle} className="mt-4">
           {error.message}
         </Alert>
       )}

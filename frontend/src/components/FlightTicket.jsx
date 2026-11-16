@@ -1,10 +1,11 @@
 import useReveal from '../hooks/useReveal.js';
-import { formatMonto } from '../utils/formatCurrency.js';
+import { formatCurrency, formatMonto } from '../utils/formatCurrency.js';
 import { formatDuracion, formatFecha, formatFechaLarga, formatHora } from '../utils/formatDate.js';
 import { sonCodigos } from '../utils/vuelos.js';
 import Barcode from './Barcode.jsx';
 import RouteLine from './RouteLine.jsx';
 import StatusIndicator from './StatusIndicator.jsx';
+import SampleStatus from './landing/SampleStatus.jsx';
 
 const LABEL = 'block font-mono text-app-label uppercase text-ink-faint';
 
@@ -13,6 +14,48 @@ function Campo({ label, className = '', children }) {
     <div className={`flex min-w-0 flex-col gap-1 ${className}`}>
       <dt className={LABEL}>{label}</dt>
       <dd className="m-0 flex flex-col gap-1">{children}</dd>
+    </div>
+  );
+}
+
+function TicketBody({ vuelo, footer, showcase }) {
+  const horario = showcase ? 'ticket-body__time text-lg' : 'text-lg';
+  const secundario = showcase ? 'ticket-body__secondary text-[19px]' : 'text-[19px]';
+  const estado = showcase
+    ? <SampleStatus estado={vuelo.estado} className="ticket-body__status text-app-body-sm font-semibold" />
+    : <StatusIndicator estado={vuelo.estado} size="md" />;
+
+  return (
+    <div className={`ticket-body flex flex-col justify-between gap-6 p-[clamp(24px,3vw,36px)] tbl:gap-7 ${showcase ? 'ticket-body--hierarchy' : ''}`}>
+          <dl className="m-0 grid grid-cols-2 gap-4 border-b border-line pb-5 tbl:grid-cols-4 max-[360px]:grid-cols-1 max-[360px]:gap-3">
+            <Campo label="Estado">{estado}</Campo>
+            <Campo label="Salida"><span className={`ticket-body__time whitespace-nowrap font-mono text-lg font-medium tracking-[-0.04em]`}>{formatHora(vuelo.fechaSalida)}</span></Campo>
+            <Campo label="Llegada"><span className={`ticket-body__time whitespace-nowrap font-mono text-lg font-medium tracking-[-0.04em]`}>{formatHora(vuelo.fechaLlegada)}</span></Campo>
+            <Campo label="Duración"><span className={`ticket-body__time whitespace-nowrap font-mono text-lg font-medium tracking-[-0.04em]`}>{formatDuracion(vuelo.fechaSalida, vuelo.fechaLlegada)}</span></Campo>
+          </dl>
+          <dl className="ticket-body__metrics m-0 grid flex-1 grid-cols-1 items-end gap-[18px] pb-2 pt-1 sm:grid-cols-2 sm:gap-x-[30px] sm:gap-y-[22px]">
+            <Campo label="Asientos disponibles">
+              <span className="ticket-body__primary font-mono text-[clamp(2.7rem,4.6vw,4.2rem)] font-medium leading-[0.9] tracking-[-0.04em]">{vuelo.asientosDisponibles}</span>
+              <span className="mt-0.5 font-mono text-app-label uppercase text-ink-faint">de {vuelo.capacidad}</span>
+            </Campo>
+            <Campo label="Precio base">
+              <span className="ticket-body__primary font-mono text-[clamp(2.7rem,4.6vw,4.2rem)] font-medium leading-[0.9] tracking-[-0.04em]">{showcase ? formatCurrency(vuelo.precioBase) : formatMonto(vuelo.precioBase)}</span>
+              <span className="mt-0.5 font-mono text-app-label uppercase text-ink-faint">ARS</span>
+            </Campo>
+            <Campo label="Capacidad" className="border-t border-dashed border-line-strong pt-3.5 sm:pt-4">
+              <span className="ticket-body__secondary mt-1 font-mono text-[19px] font-medium tracking-[-0.03em]">{vuelo.capacidad}</span>
+            </Campo>
+            <Campo label={showcase ? 'Número' : 'Asientos ocupados'} className="border-t border-dashed border-line-strong pt-3.5 sm:pt-4">
+              <span className="ticket-body__secondary mt-1 font-mono text-[19px] font-medium tracking-[-0.03em]">
+                {showcase ? vuelo.numeroVuelo : Math.max(vuelo.capacidad - vuelo.asientosDisponibles, 0)}
+              </span>
+            </Campo>
+          </dl>
+          {footer && (
+            <div className="flex flex-wrap items-center justify-between gap-4 border-t border-line pt-3.5 text-app-label text-ink-faint">
+              {footer}
+            </div>
+          )}
     </div>
   );
 }
@@ -27,17 +70,19 @@ const TROQUEL =
  * Va sobre banda `surface-band` (los troqueles toman ese color). `footer`: nodo para el pie.
  * `reveal`: el ticket "se imprime" de izquierda a derecha al entrar en pantalla.
  */
-export default function FlightTicket({ vuelo, footer, reveal = false, className = '', ...rest }) {
+export default function FlightTicket({ vuelo, footer, reveal = false, showcase = false, className = '', ...rest }) {
   const [ref, visible] = useReveal();
   const codigos = sonCodigos(vuelo.origen, vuelo.destino);
-  const serial = `${vuelo.numeroVuelo.replace(/\s+/g, '')} · ${formatFecha(vuelo.fechaSalida)}`;
+  const serial = showcase
+    ? `${vuelo.numeroVuelo.replace(/\s+/g, '')} · ${vuelo.origen} · ${vuelo.destino}`
+    : `${vuelo.numeroVuelo.replace(/\s+/g, '')} · ${formatFecha(vuelo.fechaSalida)}`;
   const animacion = reveal ? (visible ? 'animate-ticket-print' : 'opacity-0') : '';
 
   return (
     <article
       ref={ref}
       {...rest}
-      className={`grid grid-cols-1 grid-rows-[auto_1px_auto] overflow-hidden rounded-ticket bg-surface shadow-soft tbl:grid-cols-[minmax(0,0.62fr)_1px_minmax(0,1.38fr)] tbl:grid-rows-none ${animacion} ${className}`}
+      className={`grid grid-cols-1 grid-rows-[auto_1px_auto] overflow-hidden rounded-ticket bg-surface shadow-soft tbl:grid-cols-[minmax(0,0.62fr)_1px_minmax(0,1.38fr)] tbl:grid-rows-none ${showcase ? 'flight-ticket--showcase' : ''} ${animacion} ${className}`}
     >
       <div className="flex flex-col gap-[18px] bg-surface-tint p-[clamp(24px,3vw,36px)] tbl:min-h-[370px] tbl:gap-[22px]">
         <div>
@@ -48,8 +93,9 @@ export default function FlightTicket({ vuelo, footer, reveal = false, className 
         </div>
         <RouteLine origen={vuelo.origen} destino={vuelo.destino} variant="ticket" />
         <span className="text-app-body-sm text-ink-muted">
-          {codigos ? 'Salida el ' : 'Sale el '}
-          {formatFechaLarga(vuelo.fechaSalida)}
+          {showcase
+            ? `${vuelo.origenCiudad} → ${vuelo.destinoCiudad}`
+            : `${codigos ? 'Salida el ' : 'Sale el '}${formatFechaLarga(vuelo.fechaSalida)}`}
         </span>
         <div aria-hidden="true" className="mt-auto">
           <Barcode />
@@ -61,53 +107,7 @@ export default function FlightTicket({ vuelo, footer, reveal = false, className 
 
       <div aria-hidden="true" className={TROQUEL} />
 
-      <div className="flex flex-col justify-between gap-6 p-[clamp(24px,3vw,36px)] tbl:gap-7">
-        <dl className="m-0 grid grid-cols-2 gap-4 border-b border-line pb-5 tbl:grid-cols-4 max-[360px]:grid-cols-1 max-[360px]:gap-3">
-          <Campo label="Estado">
-            <StatusIndicator estado={vuelo.estado} size="md" />
-          </Campo>
-          <Campo label="Salida">
-            <span className="whitespace-nowrap font-mono text-lg font-medium tracking-[-0.04em]">{formatHora(vuelo.fechaSalida)}</span>
-          </Campo>
-          <Campo label="Llegada">
-            <span className="whitespace-nowrap font-mono text-lg font-medium tracking-[-0.04em]">{formatHora(vuelo.fechaLlegada)}</span>
-          </Campo>
-          <Campo label="Duración">
-            <span className="whitespace-nowrap font-mono text-lg font-medium tracking-[-0.04em]">
-              {formatDuracion(vuelo.fechaSalida, vuelo.fechaLlegada)}
-            </span>
-          </Campo>
-        </dl>
-
-        <dl className="m-0 grid flex-1 grid-cols-1 items-end gap-[18px] pb-2 pt-1 sm:grid-cols-2 sm:gap-x-[30px] sm:gap-y-[22px]">
-          <Campo label="Asientos disponibles">
-            <span className="font-mono text-[clamp(2.7rem,4.6vw,4.2rem)] font-medium leading-[0.9] tracking-[-0.04em]">
-              {vuelo.asientosDisponibles}
-            </span>
-            <span className="mt-0.5 font-mono text-app-label uppercase text-ink-faint">de {vuelo.capacidad}</span>
-          </Campo>
-          <Campo label="Precio base">
-            <span className="font-mono text-[clamp(2.7rem,4.6vw,4.2rem)] font-medium leading-[0.9] tracking-[-0.04em]">
-              {formatMonto(vuelo.precioBase)}
-            </span>
-            <span className="mt-0.5 font-mono text-app-label uppercase text-ink-faint">ARS</span>
-          </Campo>
-          <Campo label="Capacidad" className="border-t border-dashed border-line-strong pt-3.5 sm:pt-4">
-            <span className="mt-1 font-mono text-[19px] font-medium tracking-[-0.04em]">{vuelo.capacidad}</span>
-          </Campo>
-          <Campo label="Asientos ocupados" className="border-t border-dashed border-line-strong pt-3.5 sm:pt-4">
-            <span className="mt-1 font-mono text-[19px] font-medium tracking-[-0.04em]">
-              {Math.max(vuelo.capacidad - vuelo.asientosDisponibles, 0)}
-            </span>
-          </Campo>
-        </dl>
-
-        {footer && (
-          <div className="flex flex-wrap items-center justify-between gap-4 border-t border-line pt-3.5 text-app-label text-ink-faint">
-            {footer}
-          </div>
-        )}
-      </div>
+      <TicketBody vuelo={vuelo} footer={footer} showcase={showcase} />
     </article>
   );
 }

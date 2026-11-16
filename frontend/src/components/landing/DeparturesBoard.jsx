@@ -1,20 +1,19 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { formatDiaMes, formatFecha, formatHora } from '../../utils/formatDate.js';
 import { esHoy, primeroOperativo, proximasLlegadas, proximasSalidas } from '../../utils/vuelos.js';
 import EmptyState from '../EmptyState.jsx';
 import ErrorMessage from '../ErrorMessage.jsx';
 import Icon from '../Icon.jsx';
 import Loading from '../Loading.jsx';
-import StatusIndicator from '../StatusIndicator.jsx';
 import TextLink from '../TextLink.jsx';
+import SampleStatus from './SampleStatus.jsx';
 
 const VISTAS = [
-  { id: 'salidas', label: 'Salidas', proxima: 'Próxima salida', campo: 'fechaSalida', vacio: 'No hay salidas próximas' },
-  { id: 'llegadas', label: 'Llegadas', proxima: 'Próxima llegada', campo: 'fechaLlegada', vacio: 'No hay llegadas próximas' },
+  { id: 'salidas', label: 'Salidas', campo: 'fechaSalida', vacio: 'No hay salidas próximas' },
+  { id: 'llegadas', label: 'Llegadas', campo: 'fechaLlegada', vacio: 'No hay llegadas próximas' },
 ];
 
-const MAX_FILAS = 5;
+const MAX_FILAS = 4;
 const COLUMNAS_ESCRITORIO = 'tbl:grid-cols-[104px_minmax(0,1fr)_82px_72px_106px] tbl:gap-4';
 const COLUMNAS = `grid-cols-[74px_minmax(0,1fr)_58px] gap-x-2.5 gap-y-[5px] max-[420px]:grid-cols-[66px_minmax(0,1fr)_52px] max-[420px]:gap-x-[7px] max-[360px]:grid-cols-[62px_minmax(0,1fr)_48px] ${COLUMNAS_ESCRITORIO}`;
 const LABEL_INK = 'font-mono text-app-label uppercase text-ink-inverse-muted';
@@ -33,12 +32,13 @@ function Fila({ vuelo, campo, ahora, activa, indice }) {
       </span>
 
       <span className="min-w-0">
-        <span className="flex items-center gap-[7px] text-[15px] font-semibold tracking-[-0.01em] max-[420px]:text-sm max-[360px]:text-[13px]">
+          <span className="flex items-center gap-[7px] text-[15px] font-semibold tracking-[-0.01em] max-[420px]:text-sm max-[360px]:text-[13px]">
           <span className="min-w-0 break-words">{vuelo.origen}</span>
           <span className="sr-only"> a </span>
           <Icon name="plane" size={12} className={activa ? 'text-accent' : 'text-ink-inverse-muted'} />
           <span className="min-w-0 break-words">{vuelo.destino}</span>
         </span>
+          <span className="mt-1 block text-app-label text-ink-inverse-muted">{vuelo.origenCiudad} a {vuelo.destinoCiudad}</span>
       </span>
 
       <span className="self-start text-right font-mono tbl:self-center tbl:text-left">
@@ -53,14 +53,14 @@ function Fila({ vuelo, campo, ahora, activa, indice }) {
       <span className="hidden font-mono text-app-data text-surface-band tbl:block">{vuelo.asientosDisponibles}</span>
 
       <span className="col-span-3 tbl:col-span-1">
-        <StatusIndicator estado={vuelo.estado} tone="ink" />
+        <SampleStatus estado={vuelo.estado} tone="ink" />
       </span>
     </li>
   );
 }
 
 /**
- * Tablero de salidas y llegadas sobre banda ink, con pestañas (flechas, Inicio y Fin).
+ * Muestra de salidas y llegadas sobre banda ink, con pestañas (flechas, Inicio y Fin).
  * Es la única sección de la landing que muestra error propio: cargando, error con "Reintentar",
  * vacío y datos. Con `#tablero` (o un clic en un enlace a esa ancla) resalta el tablero un instante.
  */
@@ -74,13 +74,12 @@ export default function DeparturesBoard({ vuelos, ahora, actualizado, loading, e
 
   const lista = useMemo(() => {
     if (!vuelos) return [];
-    return vista.id === 'salidas' ? proximasSalidas(vuelos, ahora) : proximasLlegadas(vuelos, ahora);
+    const vuelosDeLaVista = vuelos.filter((vuelo) => vuelo.tipo === vista.id);
+    return vista.id === 'salidas' ? proximasSalidas(vuelosDeLaVista, ahora) : proximasLlegadas(vuelosDeLaVista, ahora);
   }, [vuelos, ahora, vista.id]);
 
   const filas = lista.slice(0, MAX_FILAS);
-  // "Próxima salida" excluye vuelos ya en el aire; "próxima llegada" sí los incluye.
-  const proximo = primeroOperativo(vista.id === 'salidas' ? lista.filter((v) => v.estado !== 'En vuelo') : lista);
-
+  const proximo = primeroOperativo(vista.id === 'salidas' ? lista.filter((vuelo) => vuelo.estado !== 'En vuelo') : lista);
   useEffect(() => {
     function resaltar() {
       setResaltado(true);
@@ -122,36 +121,18 @@ export default function DeparturesBoard({ vuelos, ahora, actualizado, loading, e
     <section id="tablero" data-surface="ink" aria-labelledby="tablero-titulo" className="bg-surface-ink py-[clamp(72px,9vw,120px)] text-ink-inverse max-sm:py-16">
       <div className="mx-auto grid w-[min(100%-(var(--spacing-gutter)*2),var(--container-shell))] items-start gap-11 min-[1000px]:grid-cols-[minmax(0,0.66fr)_minmax(0,1.34fr)] min-[1000px]:gap-[clamp(48px,7vw,96px)]">
         <div className="min-w-0">
-          <h2 id="tablero-titulo" className="m-0 text-[clamp(3.2rem,16vw,4.4rem)] font-semibold leading-[0.9] tracking-[-0.04em] sm:text-[clamp(3.4rem,7vw,4.6rem)] min-[1000px]:text-headline-board">
-            {vista.label}
+          <h2 id="tablero-titulo" className="m-0 max-w-[12ch] text-[clamp(2.2rem,4vw,3rem)] font-semibold leading-[0.94] tracking-[-0.04em]">
+            Vuelos en operación
           </h2>
+          <p className="m-0 mt-4 max-w-[36ch] text-[14.5px] leading-[1.6] text-ink-inverse-strong">
+            Consultá las próximas salidas y llegadas, con sus horarios, disponibilidad y estado.
+          </p>
           {ahora && (
             <p className="m-0 mt-3 font-mono text-app-label uppercase tracking-[0.08em] text-surface-band/80">
               Hoy, {formatDiaMes(ahora)}
             </p>
           )}
 
-          {proximo && (
-            <div className="mt-[26px] flex flex-col gap-[5px] border-t border-dashed border-line-inverse-strong pt-5 sm:mt-8 min-[1000px]:max-w-none max-[999px]:max-w-[460px]">
-              <span className={LABEL_INK}>{vista.proxima}</span>
-              <span className="font-mono text-[27px] font-medium leading-[1.05] tracking-[-0.04em]">{proximo.numeroVuelo}</span>
-              <span className="flex items-center gap-1.5 text-[13px] font-medium text-ink-inverse-strong">
-                <span>{proximo.origen}</span>
-                <span className="sr-only"> a </span>
-                <Icon name="arrow" size={12} />
-                <span>{proximo.destino}</span>
-              </span>
-              <span className="mt-1 font-mono text-4xl font-medium leading-none tracking-[-0.04em] sm:text-[42px]">
-                {formatHora(proximo[vista.campo])}
-              </span>
-              <StatusIndicator estado={proximo.estado} tone="ink" className="mt-1" />
-            </div>
-          )}
-
-          <div aria-hidden="true" className="mt-10 flex items-center gap-2.5 border-t border-line-inverse pt-[18px] font-mono text-app-label uppercase tracking-[0.1em] text-ink-inverse-muted max-[999px]:hidden">
-            <Icon name="plane" size={16} className="text-accent" />
-            <span>Salidas · Llegadas</span>
-          </div>
         </div>
 
         <div className={`min-w-0 ${resaltado ? 'outline-2 outline-offset-[12px] outline-accent' : ''}`}>
@@ -226,10 +207,10 @@ export default function DeparturesBoard({ vuelos, ahora, actualizado, loading, e
           {vuelos && filas.length > 0 && (
             <div className="mt-[18px] flex flex-wrap items-center justify-between gap-x-4 gap-y-3 border-t border-line-inverse pt-4 text-app-label text-ink-inverse-muted max-tbl:items-start">
               <span aria-live="polite" className="font-mono">
-                {filas.length} de {lista.length} {lista.length === 1 ? 'vuelo próximo' : 'vuelos próximos'}
+                Datos de ejemplo · 4 de 12 vuelos
               </span>
-              <TextLink as={Link} to="/dashboard" tone="ink" size="sm">
-                Ver todos los vuelos
+              <TextLink href="#operacion" tone="ink" size="sm">
+                Ver detalle de vuelo
               </TextLink>
             </div>
           )}

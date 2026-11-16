@@ -145,7 +145,7 @@
   --animate-settle: image-settle var(--duration-enter-slow) var(--ease-out-expo) both;
   --animate-pass-in: pass-in var(--duration-enter-slow) var(--ease-out-expo) both;
   --animate-row-in: row-in var(--duration-row) var(--ease-out-expo) both;
-  --animate-ticket-print: ticket-print var(--duration-reveal) var(--ease-out-expo) both;
+  --animate-ticket-print: ticket-print var(--duration-reveal) var(--ease-out-expo);
 
   --breakpoint-*: initial;
   --breakpoint-sm: 620px;
@@ -192,6 +192,61 @@
     0% { clip-path: inset(0 100% 0 0); opacity: 0.35; }
     45% { opacity: 1; }
     100% { clip-path: inset(0 0 0 0); opacity: 1; }
+  }
+}
+
+.ticket-body--hierarchy .ticket-body__time {
+  font-size: 22px;
+}
+
+.flight-ticket--showcase .ticket-body--hierarchy {
+  padding: clamp(22px, 2.6vw, 30px);
+  gap: 1.25rem;
+}
+
+.flight-ticket--showcase .ticket-body--hierarchy > dl:first-child {
+  padding-bottom: 1rem;
+}
+
+.flight-ticket--showcase .ticket-body__primary {
+  font-size: clamp(2.65rem, 4.3vw, 4rem);
+}
+
+.ticket-body--hierarchy .ticket-body__secondary {
+  font-size: 34px;
+}
+
+.ticket-body--hierarchy .ticket-body__metrics {
+  padding-bottom: 0;
+  row-gap: 16px;
+}
+
+.flight-ticket--showcase .ticket-body__metrics > div[class*='border-t'] {
+  padding-top: 12px;
+}
+
+.flight-ticket--showcase .ticket-body--hierarchy > div:last-child {
+  padding-top: 12px;
+}
+
+.ticket-body--hierarchy .ticket-body__status {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.masthead {
+  transition: transform 320ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.masthead--hidden {
+  transform: translateY(-100%);
+  transition-duration: 220ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .masthead,
+  .masthead--hidden {
+    transition-duration: 0.01ms;
   }
 }
 
