@@ -247,27 +247,6 @@ export default function DashboardHomePage() {
         )}
       </section>
 
-      <section aria-labelledby="accesos-directos" className="mx-auto mt-12 w-[min(100%-(var(--spacing-gutter)*2),var(--container-shell))] border-t border-line pt-8">
-        <h2 id="accesos-directos" className="m-0 text-app-section">
-          Accesos directos
-        </h2>
-        <div className="mt-4 flex flex-wrap gap-x-8 gap-y-4">
-          <TextLink as={Link} to="/dashboard/vuelos">
-            Consultar todos los vuelos
-          </TextLink>
-          <TextLink as={Link} to="/dashboard/reservas">
-            Consultar mis reservas
-          </TextLink>
-          {isAdmin && (
-            <TextLink as={Link} to="/admin">
-              Ir a administración
-            </TextLink>
-          )}
-          <TextLink as={Link} to="/">
-            Volver a la landing
-          </TextLink>
-        </div>
-      </section>
     </>
   );
 }
