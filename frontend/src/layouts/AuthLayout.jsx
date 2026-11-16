@@ -2,9 +2,6 @@ import { Link, Navigate, Outlet, useLocation } from 'react-router-dom';
 import Barcode from '../components/Barcode.jsx';
 import Masthead from '../components/Masthead.jsx';
 import useAuth from '../hooks/useAuth.js';
-import gate from '../assets/landing/gate.jpg';
-import runway from '../assets/landing/runway.jpg';
-import tarmac from '../assets/landing/tarmac.jpg';
 
 /**
  * Acceso y registro: una tarea por pantalla. La marca ocupa la mitad izquierda en escritorio

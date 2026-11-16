@@ -1,3 +1,5 @@
+import { formatHora } from '../../utils/formatDate.js';
+
 const DIVIDER = 'border-dashed border-line-strong';
 
 // Posición de cada cifra en la grilla de 2 × 2 (620–900 px) y en la fila de 5 columnas (≥ 900 px).
@@ -26,21 +28,29 @@ function Cifra({ label, children, indice, ultima }) {
   );
 }
 
-/** Cifras ficticias de ejemplo del prototipo; nunca representan la operación en vivo. */
-export default function StatsBand() {
+const ENTERO = new Intl.NumberFormat('es-AR');
+
+/**
+ * Cifras calculadas con GET /api/vuelos (`resumirVuelos`). Mientras cargan o si la API falla,
+ * se muestra "—" en lugar de un número inventado.
+ */
+export default function StatsBand({ resumen, actualizado }) {
+  const cifra = (valor) => (resumen ? ENTERO.format(valor) : '—');
   const valores = [
-    ['Vuelos', '24'],
-    ['Pasajeros', '1.284'],
-    ['Asientos libres', '312'],
-    ['Puntualidad', '94%'],
+    ['Vuelos', cifra(resumen?.total)],
+    ['Programados', cifra(resumen?.programados)],
+    ['En vuelo', cifra(resumen?.enVuelo)],
+    ['Asientos libres', cifra(resumen?.asientosLibres)],
   ];
 
   return (
     <section aria-label="Resumen de la operación" className="bg-surface-band">
       <div className="mx-auto grid w-[min(100%-(var(--spacing-gutter)*2),var(--container-shell))] grid-cols-1 sm:grid-cols-2 md:grid-cols-[1.16fr_repeat(4,1fr)]">
         <div className={`flex items-baseline justify-between gap-1.5 border-b py-4 ${DIVIDER} sm:col-span-2 sm:py-[18px] md:col-span-1 md:flex-col md:items-stretch md:justify-between md:border-b-0 md:border-r md:py-[22px] md:pl-0 md:pr-6`}>
-          <span className="font-mono text-app-label uppercase tracking-[0.1em]">Operación de hoy</span>
-          <span className="text-app-label text-ink-muted">Datos de ejemplo</span>
+          <span className="font-mono text-app-label uppercase tracking-[0.1em]">Operación</span>
+          <span className="text-app-label text-ink-muted">
+            {actualizado ? `Actualizado ${formatHora(actualizado)}` : 'Cargando datos…'}
+          </span>
         </div>
         <dl className="contents m-0">
           {valores.map(([label, valor], indice) => (

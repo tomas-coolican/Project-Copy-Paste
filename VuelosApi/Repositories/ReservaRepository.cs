@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using VuelosApi.Config;
 using VuelosApi.Enums;
+using VuelosApi.Exceptions;
 using VuelosApi.Models;
 
 namespace VuelosApi.Repositories;
@@ -53,8 +55,18 @@ public class ReservaRepository : IReservaRepository
     public async Task<Pasajero?> ObtenerPasajeroPorIdAsync(int id)
     {
         return await _contexto.Pasajeros
-            .AsNoTracking()
             .FirstOrDefaultAsync(p => p.Id == id);
+    }
+
+    public async Task<Pasajero?> ObtenerPasajeroPorDniAsync(string dni)
+    {
+        return await _contexto.Pasajeros
+            .FirstOrDefaultAsync(p => p.DNI == dni);
+    }
+
+    public async Task AgregarPasajeroAsync(Pasajero pasajero)
+    {
+        await _contexto.Pasajeros.AddAsync(pasajero);
     }
 
     public async Task<Vuelo?> ObtenerVueloPorIdAsync(int id)
@@ -92,6 +104,19 @@ public class ReservaRepository : IReservaRepository
 
     public async Task GuardarCambiosAsync()
     {
-        await _contexto.SaveChangesAsync();
+        try
+        {
+            await _contexto.SaveChangesAsync();
+        }
+        catch (DbUpdateException error) when (
+            error.InnerException is PostgresException
+            {
+                SqlState: PostgresErrorCodes.UniqueViolation
+            })
+        {
+            // Dos pedidos al mismo tiempo: los índices únicos filtrados de la base frenan al segundo.
+            throw new ConflictoException(
+                "El asiento o el pasajero ya tiene una reserva confirmada para este vuelo.");
+        }
     }
 }

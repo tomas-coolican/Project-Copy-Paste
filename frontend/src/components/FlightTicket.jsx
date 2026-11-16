@@ -19,8 +19,6 @@ function Campo({ label, className = '', children }) {
 }
 
 function TicketBody({ vuelo, footer, showcase }) {
-  const horario = showcase ? 'ticket-body__time text-lg' : 'text-lg';
-  const secundario = showcase ? 'ticket-body__secondary text-[19px]' : 'text-[19px]';
   const estado = showcase
     ? <SampleStatus estado={vuelo.estado} className="ticket-body__status text-app-body-sm font-semibold" />
     : <StatusIndicator estado={vuelo.estado} size="md" />;
@@ -93,7 +91,7 @@ export default function FlightTicket({ vuelo, footer, reveal = false, showcase =
         </div>
         <RouteLine origen={vuelo.origen} destino={vuelo.destino} variant="ticket" />
         <span className="text-app-body-sm text-ink-muted">
-          {showcase
+          {showcase && vuelo.origenCiudad
             ? `${vuelo.origenCiudad} → ${vuelo.destinoCiudad}`
             : `${codigos ? 'Salida el ' : 'Sale el '}${formatFechaLarga(vuelo.fechaSalida)}`}
         </span>

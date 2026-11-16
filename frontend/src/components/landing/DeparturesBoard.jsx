@@ -38,7 +38,9 @@ function Fila({ vuelo, campo, ahora, activa, indice }) {
           <Icon name="plane" size={12} className={activa ? 'text-accent' : 'text-ink-inverse-muted'} />
           <span className="min-w-0 break-words">{vuelo.destino}</span>
         </span>
-          <span className="mt-1 block text-app-label text-ink-inverse-muted">{vuelo.origenCiudad} a {vuelo.destinoCiudad}</span>
+          {vuelo.origenCiudad && (
+            <span className="mt-1 block text-app-label text-ink-inverse-muted">{vuelo.origenCiudad} a {vuelo.destinoCiudad}</span>
+          )}
       </span>
 
       <span className="self-start text-right font-mono tbl:self-center tbl:text-left">
@@ -207,7 +209,7 @@ export default function DeparturesBoard({ vuelos, ahora, actualizado, loading, e
           {vuelos && filas.length > 0 && (
             <div className="mt-[18px] flex flex-wrap items-center justify-between gap-x-4 gap-y-3 border-t border-line-inverse pt-4 text-app-label text-ink-inverse-muted max-tbl:items-start">
               <span aria-live="polite" className="font-mono">
-                Datos de ejemplo · 4 de 12 vuelos
+                {filas.length} de {lista.length} {lista.length === 1 ? 'vuelo próximo' : 'vuelos próximos'}
               </span>
               <TextLink href="#operacion" tone="ink" size="sm">
                 Ver detalle de vuelo
