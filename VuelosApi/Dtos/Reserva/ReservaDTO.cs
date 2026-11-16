@@ -10,6 +10,8 @@ public class ReservaDTO
     public decimal PrecioPagado { get; set; }
     public int PasajeroId { get; set; }
     public string NombrePasajero { get; set; } = string.Empty;
+    public int UsuarioId { get; set; }
+    public string UsuarioNombre { get; set; } = string.Empty;
     public ReservaVueloDTO Vuelo { get; set; } = new();
     public ReservaAsientoDTO Asiento { get; set; } = new();
 }
