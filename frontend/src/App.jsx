@@ -7,6 +7,7 @@ import AdminHomePage from './pages/AdminHomePage.jsx';
 import DashboardHomePage from './pages/DashboardHomePage.jsx';
 import LandingPage from './pages/LandingPage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
+import MisReservasPage from './pages/MisReservasPage.jsx';
 import NotFoundPage from './pages/NotFoundPage.jsx';
 import RegistroPage from './pages/RegistroPage.jsx';
 import VueloDetallePage from './pages/VueloDetallePage.jsx';
@@ -34,6 +35,7 @@ export default function App() {
               <Route path="dashboard" element={<DashboardHomePage />} />
               <Route path="dashboard/vuelos" element={<VuelosPage />} />
               <Route path="dashboard/vuelos/:id" element={<VueloDetallePage />} />
+              <Route path="dashboard/reservas" element={<MisReservasPage />} />
               <Route path="*" element={<NotFoundPage />} />
               <Route element={<AdminRoute />}>
                 <Route path="admin" element={<AdminHomePage />} />

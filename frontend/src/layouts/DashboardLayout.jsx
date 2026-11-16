@@ -23,6 +23,7 @@ export default function DashboardLayout() {
   const tabs = [
     { to: '/dashboard', label: 'Inicio', end: true },
     { to: '/dashboard/vuelos', label: 'Vuelos' },
+    { to: '/dashboard/reservas', label: 'Mis reservas' },
   ];
 
   if (isAdmin) tabs.push({ to: '/admin', label: 'Administración' });

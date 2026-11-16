@@ -6,13 +6,12 @@ import EmptyState from '../components/EmptyState.jsx';
 import ErrorMessage from '../components/ErrorMessage.jsx';
 import Loading from '../components/Loading.jsx';
 import PageHeader from '../components/PageHeader.jsx';
-import StatusIndicator from '../components/StatusIndicator.jsx';
+import ReservaRow from '../components/ReservaRow.jsx';
 import TextLink from '../components/TextLink.jsx';
 import VueloRow from '../components/VueloRow.jsx';
 import useAsync from '../hooks/useAsync.js';
 import useAuth from '../hooks/useAuth.js';
-import { formatCurrency } from '../utils/formatCurrency.js';
-import { formatFechaLarga, formatFechaHora } from '../utils/formatDate.js';
+import { formatFechaLarga } from '../utils/formatDate.js';
 import { proximasSalidas } from '../utils/vuelos.js';
 
 const CANTIDAD_VUELOS = 5;
@@ -102,34 +101,16 @@ function ResumenOperativo({ vuelos, reservas, error, retrying, onRetry }) {
   );
 }
 
-function ReservaPreview({ reserva }) {
-  return (
-    <li className="grid gap-x-5 gap-y-2 border-b border-line py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-      <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <span className="font-mono text-app-data text-ink">{reserva.numeroVuelo}</span>
-          <StatusIndicator estado={reserva.estado} />
-        </div>
-        <p className="m-0 mt-1.5 text-app-body-sm text-ink-muted">
-          Asiento <span className="font-mono text-ink">{reserva.numeroAsiento}</span> · Reserva del{' '}
-          <time dateTime={reserva.fechaReserva?.toISOString()}>{formatFechaHora(reserva.fechaReserva)}</time>
-        </p>
-      </div>
-      <div className="flex items-center justify-between gap-4 sm:justify-end">
-        <span className="font-mono text-app-data text-ink">{formatCurrency(reserva.precioPagado)}</span>
-        <TextLink as={Link} to={`/dashboard/vuelos/${reserva.vueloId}`} size="sm">
-          Ver vuelo
-        </TextLink>
-      </div>
-    </li>
-  );
-}
-
 export default function DashboardHomePage() {
   const { user, isAdmin } = useAuth();
   const vuelosState = useAsync(vuelosApi.listar);
   const reservasState = useAsync(reservasApi.listar);
   const ahora = useMemo(() => vuelosState.updatedAt ?? new Date(), [vuelosState.updatedAt]);
+
+  const vuelosPorId = useMemo(
+    () => new Map((vuelosState.data ?? []).map((vuelo) => [vuelo.id, vuelo])),
+    [vuelosState.data],
+  );
 
   const proximos = useMemo(() => {
     if (!vuelosState.data) return [];
@@ -140,8 +121,11 @@ export default function DashboardHomePage() {
 
   const reservas = useMemo(() => {
     if (!reservasState.data) return [];
-    return [...reservasState.data].sort((a, b) => (b.fechaReserva ?? 0) - (a.fechaReserva ?? 0)).slice(0, 3);
-  }, [reservasState.data]);
+    return [...reservasState.data]
+      .sort((a, b) => (b.fechaReserva ?? 0) - (a.fechaReserva ?? 0))
+      .slice(0, 3)
+      .map((reserva) => ({ ...reserva, vuelo: vuelosPorId.get(reserva.vueloId) ?? null }));
+  }, [reservasState.data, vuelosPorId]);
 
   const confirmadas = reservasState.data
     ? reservasState.data.filter((reserva) => reserva.estado === 'Confirmada').length
@@ -227,6 +211,9 @@ export default function DashboardHomePage() {
               </p>
             )}
           </div>
+          <TextLink as={Link} to="/dashboard/reservas" size="sm">
+            Ver todas
+          </TextLink>
         </div>
 
         {reservasState.error && !reservasState.data ? (
@@ -254,7 +241,7 @@ export default function DashboardHomePage() {
         ) : (
           <ul className="m-0 list-none border-t border-line p-0">
             {reservas.map((reserva) => (
-              <ReservaPreview key={reserva.id} reserva={reserva} />
+              <ReservaRow key={reserva.id} reserva={reserva} compact />
             ))}
           </ul>
         )}
@@ -267,6 +254,9 @@ export default function DashboardHomePage() {
         <div className="mt-4 flex flex-wrap gap-x-8 gap-y-4">
           <TextLink as={Link} to="/dashboard/vuelos">
             Consultar todos los vuelos
+          </TextLink>
+          <TextLink as={Link} to="/dashboard/reservas">
+            Consultar mis reservas
           </TextLink>
           {isAdmin && (
             <TextLink as={Link} to="/admin">

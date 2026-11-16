@@ -6,4 +6,9 @@ export async function listar() {
   return data.map(adaptReserva);
 }
 
-export default { listar };
+/** DELETE responde 204 sin cuerpo: no hay objeto que devolver. */
+export async function cancelar(id) {
+  await client.delete(`/reservas/${id}`);
+}
+
+export default { listar, cancelar };
