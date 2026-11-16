@@ -27,9 +27,27 @@ client.interceptors.request.use((config) => {
   return config;
 });
 
+let onUnauthorized = null;
+
+/** Registra qué hacer ante un 401 (limpiar sesión y mandar al login). Lo usa AuthContext. */
+export function setUnauthorizedHandler(handler) {
+  onUnauthorized = handler;
+}
+
+// Un 401 en /auth/* es un login incorrecto, no una sesión vencida.
+function esPeticionDeAuth(url = '') {
+  return /(^|\/)auth\//.test(url);
+}
+
 client.interceptors.response.use(
   (response) => response,
-  (error) => Promise.reject(toApiError(error)),
+  (error) => {
+    if (error?.response?.status === 401 && !esPeticionDeAuth(error.config?.url)) {
+      onUnauthorized?.();
+    }
+
+    return Promise.reject(toApiError(error));
+  },
 );
 
 export default client;

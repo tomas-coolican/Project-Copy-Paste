@@ -8,9 +8,10 @@ const NAV_LINK =
  * Cabecera fija (única sombra fuera de los tickets).
  * `nav`: [{ to, label, end? }]. `actions`: nodo a la derecha (ingresar, usuario, CTA);
  * en menos de 900 px el menú abre una lista de filas de 48 px con las mismas acciones.
+ * `inlineActions`: las acciones quedan siempre a la vista, sin menú (pantallas de acceso).
  * Escape cierra el menú y devuelve el foco al botón.
  */
-export default function Masthead({ nav = [], actions = null, contextLabel = 'Sistema de gestión' }) {
+export default function Masthead({ nav = [], actions = null, inlineActions = false, contextLabel = 'Sistema de gestión' }) {
   const [open, setOpen] = useState(false);
   const toggleRef = useRef(null);
 
@@ -39,7 +40,7 @@ export default function Masthead({ nav = [], actions = null, contextLabel = 'Sis
         Saltar al contenido
       </a>
 
-      <div className="mx-auto flex min-h-19 w-[min(100%-(var(--spacing-gutter)*2),var(--container-shell))] items-center gap-6">
+      <div className="mx-auto flex min-h-(--size-masthead) w-[min(100%-(var(--spacing-gutter)*2),var(--container-shell))] items-center gap-6">
         <Link to="/" className="flex min-w-0 items-center gap-3.5 text-ink no-underline">
           <span className="whitespace-nowrap text-[22px] font-bold leading-none tracking-[-0.04em]">Vuelos</span>
           <span className="hidden border-l border-line-strong pl-3.5 font-mono text-app-label uppercase text-ink-faint sm:inline">
@@ -58,7 +59,8 @@ export default function Masthead({ nav = [], actions = null, contextLabel = 'Sis
         )}
 
         <div className={`flex items-center gap-4 ${nav.length > 0 ? '' : 'ml-auto'}`}>
-          <div className="hidden items-center gap-4 md:flex">{actions}</div>
+          <div className={`items-center gap-4 ${inlineActions ? 'flex' : 'hidden md:flex'}`}>{actions}</div>
+          {!inlineActions && (
           <button
             ref={toggleRef}
             type="button"
@@ -71,10 +73,11 @@ export default function Masthead({ nav = [], actions = null, contextLabel = 'Sis
             <span className={`absolute left-1/2 top-1/2 h-[1.5px] w-[18px] -translate-x-1/2 bg-current transition-transform duration-(--duration-state) ${open ? '-translate-y-1/2 rotate-45' : '-translate-y-[calc(50%+3.25px)]'}`} />
             <span className={`absolute left-1/2 top-1/2 h-[1.5px] w-[18px] -translate-x-1/2 bg-current transition-transform duration-(--duration-state) ${open ? '-translate-y-1/2 -rotate-45' : '-translate-y-[calc(50%-3.25px)]'}`} />
           </button>
+          )}
         </div>
       </div>
 
-      {open && (
+      {open && !inlineActions && (
         <nav id="menu-movil" aria-label="Principal en móvil" className="border-t border-line px-gutter pb-6 pt-2 md:hidden">
           {nav.map((item) => (
             <NavLink
