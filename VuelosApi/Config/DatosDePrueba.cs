@@ -3,8 +3,8 @@ using VuelosApi.Models;
 
 namespace VuelosApi.Config;
 
-// Datos de prueba de vuelos con sus asientos, para que el frontend trabaje sin mocks.
-// Se cargan solo en Development y solo si todavía no hay vuelos.
+// Vuelos de ejemplo con sus asientos, para que el frontend trabaje sin mocks.
+// Se cargan solo si DatosDePrueba:Cargar es true y todavía no hay vuelos.
 public static class DatosDePrueba
 {
     public static void Sembrar(AppDbContext contexto)

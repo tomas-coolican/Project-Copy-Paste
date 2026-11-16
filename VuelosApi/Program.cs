@@ -40,7 +40,7 @@ builder.Services.AddSwaggerGen(opciones =>
     });
 });
 
-// Conexión a SQL Server, que es el proveedor configurado actualmente en el proyecto.
+// Conexión a PostgreSQL (Supabase) con Npgsql.
 builder.Services.AddDbContext<AppDbContext>(opciones =>
     opciones.UseNpgsql(builder.Configuration.GetConnectionString("Supabase")));
 
@@ -119,8 +119,8 @@ using (var scope = app.Services.CreateScope())
     var contexto = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await AdminSeeder.CrearAdministradorInicialAsync(contexto, app.Configuration);
 
-    // Datos de prueba de vuelos: solo en Development y solo si todavía no hay vuelos.
-    if (app.Environment.IsDevelopment())
+    // Vuelos de ejemplo: solo si DatosDePrueba:Cargar es true y todavía no hay vuelos.
+    if (app.Configuration.GetValue<bool>("DatosDePrueba:Cargar"))
     {
         try
         {
