@@ -8,7 +8,7 @@ import Button from './Button.jsx';
  * - 403 / 404: sin reintento; el llamador pasa `action` (p. ej. "Volver al listado").
  * No muestra stack traces, mensajes de Axios ni ProblemDetails crudos.
  */
-export default function ErrorMessage({ error, title, onRetry, retrying = false, action, className = '' }) {
+export default function ErrorMessage({ error, title, onRetry, retrying = false, action, surface = 'light', className = '' }) {
   const status = error?.status ?? null;
   const isNetwork = Boolean(error?.isNetworkError);
   const canRetry = Boolean(onRetry) && status !== 403 && status !== 404;
@@ -36,6 +36,7 @@ export default function ErrorMessage({ error, title, onRetry, retrying = false, 
   return (
     <Alert
       tone={tone}
+      surface={surface}
       role="alert"
       title={heading}
       meta={!isNetwork && status ? `HTTP ${status}` : undefined}

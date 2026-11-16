@@ -6,7 +6,7 @@ const NAV_LINK =
 
 /**
  * Cabecera fija (única sombra fuera de los tickets).
- * `nav`: [{ to, label, end? }]. `actions`: nodo a la derecha (ingresar, usuario, CTA);
+ * `nav`: [{ to, label, end? }] o [{ href, label }] para anclas de la landing (enlaces normales, sin estado activo). `actions`: nodo a la derecha (ingresar, usuario, CTA);
  * en menos de 900 px el menú abre una lista de filas de 48 px con las mismas acciones.
  * `inlineActions`: las acciones quedan siempre a la vista, sin menú (pantallas de acceso).
  * Escape cierra el menú y devuelve el foco al botón.
@@ -50,11 +50,17 @@ export default function Masthead({ nav = [], actions = null, inlineActions = fal
 
         {nav.length > 0 && (
           <nav aria-label="Principal" className="ml-auto hidden items-center gap-7 md:flex">
-            {nav.map((item) => (
-              <NavLink key={item.to} to={item.to} end={item.end} className={NAV_LINK}>
-                {item.label}
-              </NavLink>
-            ))}
+            {nav.map((item) =>
+              item.href ? (
+                <a key={item.href} href={item.href} className={NAV_LINK}>
+                  {item.label}
+                </a>
+              ) : (
+                <NavLink key={item.to} to={item.to} end={item.end} className={NAV_LINK}>
+                  {item.label}
+                </NavLink>
+              ),
+            )}
           </nav>
         )}
 
@@ -79,17 +85,28 @@ export default function Masthead({ nav = [], actions = null, inlineActions = fal
 
       {open && !inlineActions && (
         <nav id="menu-movil" aria-label="Principal en móvil" className="border-t border-line px-gutter pb-6 pt-2 md:hidden">
-          {nav.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              onClick={close}
-              className="flex min-h-12 items-center border-b border-line text-app-body text-ink no-underline aria-[current=page]:font-semibold"
-            >
-              {item.label}
-            </NavLink>
-          ))}
+          {nav.map((item) =>
+            item.href ? (
+              <a
+                key={item.href}
+                href={item.href}
+                onClick={close}
+                className="flex min-h-12 items-center border-b border-line text-app-body text-ink no-underline"
+              >
+                {item.label}
+              </a>
+            ) : (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                onClick={close}
+                className="flex min-h-12 items-center border-b border-line text-app-body text-ink no-underline aria-[current=page]:font-semibold"
+              >
+                {item.label}
+              </NavLink>
+            ),
+          )}
           {actions && (
             <div className="mt-4 flex flex-col gap-3" onClick={close}>
               {actions}

@@ -136,8 +136,16 @@
   --duration-reveal: 1s;
   --stagger-row: 45ms;
 
+  --duration-row: 0.45s;
+
   --animate-skeleton: skeleton-pulse 1.4s var(--ease-out-expo) infinite alternate;
   --animate-delayed-in: delayed-in 0s linear 300ms both;
+  --animate-line-in: line-in var(--duration-enter) var(--ease-out-expo) both;
+  --animate-rise: rise var(--duration-enter) var(--ease-out-expo) both;
+  --animate-settle: image-settle var(--duration-enter-slow) var(--ease-out-expo) both;
+  --animate-pass-in: pass-in var(--duration-enter-slow) var(--ease-out-expo) both;
+  --animate-row-in: row-in var(--duration-row) var(--ease-out-expo) both;
+  --animate-ticket-print: ticket-print var(--duration-reveal) var(--ease-out-expo) both;
 
   --breakpoint-*: initial;
   --breakpoint-sm: 620px;
@@ -154,12 +162,49 @@
     from { opacity: 0; }
     to { opacity: 1; }
   }
+
+  @keyframes line-in {
+    from { opacity: 0; transform: translateY(0.45em); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(18px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes image-settle {
+    from { opacity: 0; transform: scale(1.055); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  @keyframes pass-in {
+    from { opacity: 0; transform: translateY(26px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes row-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes ticket-print {
+    0% { clip-path: inset(0 100% 0 0); opacity: 0.35; }
+    45% { opacity: 1; }
+    100% { clip-path: inset(0 0 0 0); opacity: 1; }
+  }
 }
 
 @layer base {
   html {
     color-scheme: light;
     -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  /* Las anclas de la landing quedan debajo del masthead fijo. */
+  [id] {
+    scroll-margin-top: 96px;
   }
 
   body {

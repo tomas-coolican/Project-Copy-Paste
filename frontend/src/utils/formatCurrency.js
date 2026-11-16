@@ -18,3 +18,11 @@ export function formatCurrency(valor) {
 
   return (Number.isInteger(numero) ? ENTERO : CON_CENTAVOS).format(numero);
 }
+
+const SOLO_NUMERO = new Intl.NumberFormat('es-AR', { maximumFractionDigits: 2 });
+
+/** "48.000": el monto sin símbolo, para cifras grandes con la moneda en una etiqueta aparte. */
+export function formatMonto(valor) {
+  const numero = Number(valor);
+  return Number.isFinite(numero) ? SOLO_NUMERO.format(numero) : '—';
+}

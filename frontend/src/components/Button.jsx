@@ -7,6 +7,9 @@ const VARIANTS = {
   // Texto ink sobre naranja (4,86:1). Hover: fondo ink, texto blanco.
   primary:
     'border-accent bg-accent text-accent-ink hover:border-ink hover:bg-ink hover:text-surface',
+  // Sobre banda ink el hover a ink desaparecería: invierte a blanco.
+  'primary-inverse':
+    'border-accent bg-accent text-accent-ink hover:border-surface hover:bg-surface hover:text-ink',
   secondary: 'border-line-strong bg-surface text-ink hover:border-ink',
   // Destructivo: nunca un bloque rojo sólido.
   danger: 'border-danger bg-surface text-danger hover:bg-danger-surface',

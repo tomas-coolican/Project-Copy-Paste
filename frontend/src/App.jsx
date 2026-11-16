@@ -4,21 +4,13 @@ import { AuthProvider } from './context/AuthContext.jsx';
 import useAuth from './hooks/useAuth.js';
 import AuthLayout from './layouts/AuthLayout.jsx';
 import PublicLayout from './layouts/PublicLayout.jsx';
+import LandingPage from './pages/LandingPage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import RegistroPage from './pages/RegistroPage.jsx';
 import AdminRoute from './routes/AdminRoute.jsx';
 import ProtectedRoute from './routes/ProtectedRoute.jsx';
 
-// Provisorio: la landing (S3) y el dashboard (S4) reemplazan estas dos vistas.
-function InicioProvisorio() {
-  return (
-    <section className="mx-auto w-[min(100%-(var(--spacing-gutter)*2),var(--container-shell))] py-16">
-      <h1 className="m-0 text-app-page font-bold">Vuelos</h1>
-      <p className="m-0 mt-2 text-ink-muted">La landing llega en el tramo S3.</p>
-    </section>
-  );
-}
-
+// Provisorio: el dashboard (S4) reemplaza esta vista.
 function TableroProvisorio() {
   const { user, logout } = useAuth();
 
@@ -44,7 +36,7 @@ export default function App() {
       <AuthProvider>
         <Routes>
           <Route element={<PublicLayout />}>
-            <Route index element={<InicioProvisorio />} />
+            <Route index element={<LandingPage />} />
             <Route element={<ProtectedRoute />}>
               <Route path="dashboard" element={<TableroProvisorio />} />
               <Route element={<AdminRoute />}>

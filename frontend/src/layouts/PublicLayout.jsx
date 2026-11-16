@@ -1,5 +1,6 @@
 import { Link, Outlet } from 'react-router-dom';
 import Button from '../components/Button.jsx';
+import { SECCIONES } from '../components/landing/secciones.js';
 import Masthead from '../components/Masthead.jsx';
 import useAuth from '../hooks/useAuth.js';
 
@@ -39,7 +40,7 @@ function AccionesPublicas() {
 export default function PublicLayout() {
   return (
     <>
-      <Masthead actions={<AccionesPublicas />} />
+      <Masthead nav={SECCIONES} actions={<AccionesPublicas />} />
       <main id="contenido">
         <Outlet />
       </main>
