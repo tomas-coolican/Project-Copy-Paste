@@ -5,6 +5,11 @@ export const ESTADO_VUELO = Object.freeze({
   3: 'Finalizado',
 });
 
+export const ESTADO_RESERVA = Object.freeze({
+  0: 'Confirmada',
+  1: 'Cancelada',
+});
+
 export const CATEGORIA_ASIENTO = Object.freeze({
   0: 'Turista',
   1: 'Ejecutivo',
@@ -35,16 +40,32 @@ export function toApiDateTime(value) {
 export function adaptVuelo(dto) {
   return {
     id: dto.id,
-    numeroVuelo: dto.numeroVuelo,
+    numeroVuelo: dto.codigo ?? dto.numeroVuelo ?? '',
     origen: dto.origen,
     destino: dto.destino,
     fechaSalida: parseApiDate(dto.fechaSalida),
     fechaLlegada: parseApiDate(dto.fechaLlegada),
-    capacidad: dto.capacidad,
-    asientosDisponibles: dto.asientosDisponibles,
-    precioBase: Number(dto.precioBase),
+    capacidad: dto.asientosTotales ?? dto.capacidad ?? 0,
+    asientosDisponibles: dto.asientosDisponibles ?? 0,
+    precioBase: Number(dto.precio ?? dto.precioBase ?? 0),
     estado: getEnumLabel(ESTADO_VUELO, dto.estado),
     estadoCodigo: dto.estado,
+  };
+}
+
+export function adaptReserva(dto) {
+  return {
+    id: dto.id,
+    fechaReserva: parseApiDate(dto.fechaReserva),
+    estado: getEnumLabel(ESTADO_RESERVA, dto.estado),
+    estadoCodigo: dto.estado,
+    precioPagado: Number(dto.precioPagado),
+    pasajeroId: dto.pasajeroId,
+    nombrePasajero: dto.nombrePasajero,
+    vueloId: dto.vuelo?.id ?? dto.vueloId,
+    numeroVuelo: dto.vuelo?.codigo ?? dto.numeroVuelo ?? '',
+    asientoId: dto.asiento?.id ?? dto.asientoId,
+    numeroAsiento: dto.asiento?.numero ?? dto.numeroAsiento ?? '',
   };
 }
 
