@@ -17,7 +17,6 @@ public class PasajerosController : ControllerBase
         _servicio = servicio;
     }
 
-    // Solo administrador: expone datos personales (DNI, email) de todos los pasajeros.
     [Authorize(Roles = "Administrador")]
     [HttpGet]
     public async Task<IActionResult> ObtenerTodos()
@@ -25,7 +24,6 @@ public class PasajerosController : ControllerBase
         return Ok(await _servicio.ObtenerTodosAsync());
     }
 
-    // Solo administrador: expone datos personales (DNI, email) de todos los pasajeros.
     [Authorize(Roles = "Administrador")]
     [HttpGet("{id:int}")]
     public async Task<IActionResult> ObtenerPorId(int id)
