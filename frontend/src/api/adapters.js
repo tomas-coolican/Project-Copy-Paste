@@ -40,14 +40,14 @@ export function toApiDateTime(value) {
 export function adaptVuelo(dto) {
   return {
     id: dto.id,
-    numeroVuelo: dto.numeroVuelo,
+    numeroVuelo: dto.codigo ?? dto.numeroVuelo ?? '',
     origen: dto.origen,
     destino: dto.destino,
     fechaSalida: parseApiDate(dto.fechaSalida),
     fechaLlegada: parseApiDate(dto.fechaLlegada),
-    capacidad: dto.capacidad,
-    asientosDisponibles: dto.asientosDisponibles,
-    precioBase: Number(dto.precioBase),
+    capacidad: dto.asientosTotales ?? dto.capacidad ?? 0,
+    asientosDisponibles: dto.asientosDisponibles ?? 0,
+    precioBase: Number(dto.precio ?? dto.precioBase ?? 0),
     estado: getEnumLabel(ESTADO_VUELO, dto.estado),
     estadoCodigo: dto.estado,
   };
@@ -62,10 +62,10 @@ export function adaptReserva(dto) {
     precioPagado: Number(dto.precioPagado),
     pasajeroId: dto.pasajeroId,
     nombrePasajero: dto.nombrePasajero,
-    vueloId: dto.vueloId,
-    numeroVuelo: dto.numeroVuelo,
-    asientoId: dto.asientoId,
-    numeroAsiento: dto.numeroAsiento,
+    vueloId: dto.vuelo?.id ?? dto.vueloId,
+    numeroVuelo: dto.vuelo?.codigo ?? dto.numeroVuelo ?? '',
+    asientoId: dto.asiento?.id ?? dto.asientoId,
+    numeroAsiento: dto.asiento?.numero ?? dto.numeroAsiento ?? '',
   };
 }
 
