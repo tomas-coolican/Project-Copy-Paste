@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using VuelosApi.Dtos.Pasajero;
 using VuelosApi.Services;
@@ -6,6 +7,7 @@ namespace VuelosApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class PasajerosController : ControllerBase
 {
     private readonly PasajerosService _servicio;
@@ -15,12 +17,16 @@ public class PasajerosController : ControllerBase
         _servicio = servicio;
     }
 
+    // Solo administrador: expone datos personales (DNI, email) de todos los pasajeros.
+    [Authorize(Roles = "Administrador")]
     [HttpGet]
     public async Task<IActionResult> ObtenerTodos()
     {
         return Ok(await _servicio.ObtenerTodosAsync());
     }
 
+    // Solo administrador: expone datos personales (DNI, email) de todos los pasajeros.
+    [Authorize(Roles = "Administrador")]
     [HttpGet("{id:int}")]
     public async Task<IActionResult> ObtenerPorId(int id)
     {
@@ -43,6 +49,7 @@ public class PasajerosController : ControllerBase
         }
     }
 
+    [Authorize(Roles = "Administrador")]
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Eliminar(int id)
     {
