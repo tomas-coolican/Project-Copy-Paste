@@ -6,9 +6,15 @@ export async function listar() {
   return data.map(adaptReserva);
 }
 
+/** El usuario sale del token; el cuerpo lleva solo { pasajeroId, vueloId, asientoId }. */
+export async function crear({ pasajeroId, vueloId, asientoId }) {
+  const { data } = await client.post('/reservas', { pasajeroId, vueloId, asientoId });
+  return adaptReserva(data);
+}
+
 /** DELETE responde 204 sin cuerpo: no hay objeto que devolver. */
 export async function cancelar(id) {
   await client.delete(`/reservas/${id}`);
 }
 
-export default { listar, cancelar };
+export default { listar, crear, cancelar };

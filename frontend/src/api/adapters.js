@@ -53,6 +53,24 @@ export function adaptVuelo(dto) {
   };
 }
 
+export function adaptAsiento(dto) {
+  return {
+    id: dto.id,
+    numero: String(dto.numero ?? ''),
+    categoria: getEnumLabel(CATEGORIA_ASIENTO, dto.categoria),
+    categoriaCodigo: dto.categoria,
+    disponible: Boolean(dto.disponible),
+  };
+}
+
+/** GET /vuelos/{id}: el vuelo y la lista de asientos con su disponibilidad. */
+export function adaptVueloDetalle(dto) {
+  return {
+    vuelo: adaptVuelo(dto),
+    asientos: (dto.asientos ?? []).map(adaptAsiento),
+  };
+}
+
 export function adaptReserva(dto) {
   return {
     id: dto.id,
@@ -66,6 +84,10 @@ export function adaptReserva(dto) {
     numeroVuelo: dto.vuelo?.codigo ?? dto.numeroVuelo ?? '',
     asientoId: dto.asiento?.id ?? dto.asientoId,
     numeroAsiento: dto.asiento?.numero ?? dto.numeroAsiento ?? '',
+    categoriaAsiento: getEnumLabel(CATEGORIA_ASIENTO, dto.asiento?.categoria, ''),
+    origen: dto.vuelo?.origen ?? '',
+    destino: dto.vuelo?.destino ?? '',
+    fechaSalida: parseApiDate(dto.vuelo?.fechaSalida),
   };
 }
 
