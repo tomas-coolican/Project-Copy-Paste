@@ -55,3 +55,10 @@ export function formatDuracion(desde, hasta) {
   const horas = String(Math.floor(minutos / 60)).padStart(2, '0');
   return `${horas}:${String(minutos % 60).padStart(2, '0')}`;
 }
+
+export function toDateTimeLocal(fecha) {
+  if (!esValida(fecha)) return '';
+
+  const dosDigitos = (valor) => String(valor).padStart(2, '0');
+  return `${fecha.getFullYear()}-${dosDigitos(fecha.getMonth() + 1)}-${dosDigitos(fecha.getDate())}T${dosDigitos(fecha.getHours())}:${dosDigitos(fecha.getMinutes())}`;
+}

@@ -3,7 +3,8 @@ import Barcode from './Barcode.jsx';
 /**
  * Pase de abordar: pieza del hero (pase de operación) y del comprobante de reserva (S7).
  * `status`: nodo con el estado; `route`: nodo con la ruta; `fields`: [{ label, value }] (hasta 3);
- * `serial`: texto mono bajo el código de barras. `as` permite cambiar el elemento contenedor.
+ * Cada campo puede traer `wide` (ocupa toda la fila y admite varias líneas, p. ej. un nombre).
+ * `serial`: texto mono bajo el código de barras.
  */
 export default function BoardingPass({ label = 'Pase de operación', status, route, fields = [], serial, className = '', ...rest }) {
   return (
@@ -19,10 +20,10 @@ export default function BoardingPass({ label = 'Pase de operación', status, rou
       <div className="my-4">{route}</div>
 
       <dl className="m-0 grid grid-cols-3 gap-2.5 border-t border-line pt-3 max-[420px]:gap-[7px]">
-        {fields.map(({ label: etiqueta, value }) => (
-          <div key={etiqueta} className="flex min-w-0 flex-col gap-[3px]">
+        {fields.map(({ label: etiqueta, value, wide = false }) => (
+          <div key={etiqueta} className={`flex min-w-0 flex-col gap-[3px] ${wide ? 'col-span-3' : ''}`}>
             <dt className="font-mono text-app-label uppercase text-ink-faint">{etiqueta}</dt>
-            <dd className="m-0 whitespace-nowrap font-mono text-[15px] font-medium tracking-[-0.03em] max-[420px]:text-sm">
+            <dd className={`m-0 font-mono text-[15px] font-medium tracking-[-0.03em] max-[420px]:text-sm ${wide ? 'break-words' : 'whitespace-nowrap'}`}>
               {value}
             </dd>
           </div>

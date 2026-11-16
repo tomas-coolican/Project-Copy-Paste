@@ -1,5 +1,5 @@
 import client from './client.js';
-import { adaptVuelo } from './adapters.js';
+import { adaptVuelo, adaptVueloDetalle } from './adapters.js';
 
 export async function listar() {
   const { data } = await client.get('/vuelos');
@@ -9,6 +9,17 @@ export async function listar() {
 export async function obtener(id) {
   const { data } = await client.get(`/vuelos/${id}`);
   return adaptVuelo(data);
+}
+
+/** El vuelo y sus asientos en una sola petición (GET /vuelos/{id} ya incluye `asientos`). */
+export async function obtenerDetalle(id) {
+  const { data } = await client.get(`/vuelos/${id}`);
+  return adaptVueloDetalle(data);
+}
+
+/** Asientos del vuelo con su disponibilidad actual: [{ id, numero, categoria, disponible }]. */
+export async function obtenerAsientos(id) {
+  return (await obtenerDetalle(id)).asientos;
 }
 
 export async function crear(dto) {
@@ -26,4 +37,4 @@ export async function eliminar(id) {
   return data;
 }
 
-export default { listar, obtener, crear, actualizar, eliminar };
+export default { listar, obtener, obtenerDetalle, obtenerAsientos, crear, actualizar, eliminar };

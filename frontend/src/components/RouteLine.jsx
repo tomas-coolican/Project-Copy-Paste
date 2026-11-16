@@ -33,7 +33,7 @@ export default function RouteLine({ origen, destino, variant = 'pass', className
     <p
       className={`m-0 flex items-center gap-2.5 leading-none tracking-[-0.04em] ${size} ${className}`}
     >
-      <span className={codigos ? '' : 'min-w-0 max-w-[40%] break-words leading-[1.1]'}>{origen}</span>
+      <span className={codigos || variant === 'pass' ? 'min-w-0 shrink' : 'min-w-0 max-w-[40%] break-words leading-[1.1]'}>{origen}</span>
       <span className="sr-only"> a </span>
       {variant === 'pass' ? (
         <span aria-hidden="true" className="flex min-w-0 flex-1 items-center gap-[7px] text-accent">
@@ -44,7 +44,7 @@ export default function RouteLine({ origen, destino, variant = 'pass', className
       ) : (
         <Icon name="plane" size={20} className="text-accent" />
       )}
-      <span className={codigos ? '' : 'min-w-0 max-w-[40%] break-words text-right leading-[1.1]'}>{destino}</span>
+      <span className={codigos || variant === 'pass' ? 'min-w-0 shrink' : 'min-w-0 max-w-[40%] break-words text-right leading-[1.1]'}>{destino}</span>
     </p>
   );
 }

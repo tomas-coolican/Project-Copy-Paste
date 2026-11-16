@@ -22,7 +22,7 @@ export default function ErrorMessage({ error, title, onRetry, retrying = false, 
     heading = 'Sin conexión';
     body = 'No pudimos contactar al servidor. Revisá tu conexión y volvé a intentar.';
   } else if (status === 403) {
-    heading = 'No tenés permiso para ver esta sección';
+    heading = title ?? 'No tenés permiso para ver esta sección';
   } else if (status === 404) {
     heading = title ?? 'No encontramos lo que buscabas';
   }
