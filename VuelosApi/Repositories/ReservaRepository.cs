@@ -19,6 +19,7 @@ public class ReservaRepository : IReservaRepository
         return await _contexto.Reservas
             .AsNoTracking()
             .Include(r => r.Pasajero)
+            .Include(r => r.Usuario)
             .Include(r => r.Vuelo)
             .Include(r => r.Asiento)
             .OrderByDescending(r => r.FechaReserva)
@@ -31,6 +32,7 @@ public class ReservaRepository : IReservaRepository
             .AsNoTracking()
             .Where(r => r.UsuarioId == usuarioId)
             .Include(r => r.Pasajero)
+            .Include(r => r.Usuario)
             .Include(r => r.Vuelo)
             .Include(r => r.Asiento)
             .OrderByDescending(r => r.FechaReserva)
@@ -42,6 +44,7 @@ public class ReservaRepository : IReservaRepository
         // Se mantiene tracking porque este método también se utiliza para cancelar.
         return await _contexto.Reservas
             .Include(r => r.Pasajero)
+            .Include(r => r.Usuario)
             .Include(r => r.Vuelo)
             .Include(r => r.Asiento)
             .FirstOrDefaultAsync(r => r.Id == id);

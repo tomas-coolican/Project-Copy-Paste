@@ -133,13 +133,16 @@ public class ReservaService : IReservaService
             NombrePasajero = reserva.Pasajero == null
                 ? string.Empty
                 : reserva.Pasajero.Nombre + " " + reserva.Pasajero.Apellido,
+            UsuarioId = reserva.UsuarioId,
+            UsuarioNombre = reserva.Usuario?.Nombre ?? string.Empty,
             Vuelo = new ReservaVueloDTO
             {
                 Id = reserva.VueloId,
                 Codigo = reserva.Vuelo?.NumeroVuelo ?? string.Empty,
                 Origen = reserva.Vuelo?.Origen ?? string.Empty,
                 Destino = reserva.Vuelo?.Destino ?? string.Empty,
-                FechaSalida = reserva.Vuelo?.FechaSalida ?? default
+                FechaSalida = reserva.Vuelo?.FechaSalida ?? default,
+                FechaLlegada = reserva.Vuelo?.FechaLlegada ?? default
             },
             Asiento = new ReservaAsientoDTO
             {
