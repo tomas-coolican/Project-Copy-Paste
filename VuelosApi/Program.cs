@@ -75,7 +75,8 @@ builder.Services.AddAuthorization();
 
 // Repositorios y servicios de la aplicación.
 builder.Services.AddScoped(typeof(Repository<>));
-builder.Services.AddScoped<VuelosService>();
+builder.Services.AddScoped<IVueloRepository, VueloRepository>();
+builder.Services.AddScoped<IVueloService, VueloService>();
 builder.Services.AddScoped<PasajerosService>();
 builder.Services.AddScoped<IReservaService, ReservaService>();
 builder.Services.AddScoped<IReservaRepository, ReservaRepository>();
@@ -117,6 +118,19 @@ using (var scope = app.Services.CreateScope())
 {
     var contexto = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await AdminSeeder.CrearAdministradorInicialAsync(contexto, app.Configuration);
+
+    // Datos de prueba de vuelos: solo en Development y solo si todavía no hay vuelos.
+    if (app.Environment.IsDevelopment())
+    {
+        try
+        {
+            DatosDePrueba.Sembrar(contexto);
+        }
+        catch (Exception ex)
+        {
+            app.Logger.LogWarning(ex, "No se cargaron los datos de prueba de vuelos.");
+        }
+    }
 }
 
 app.Run();

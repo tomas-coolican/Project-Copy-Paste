@@ -12,7 +12,7 @@ Este documento describe el estado de la rama de Ignacio sobre `VuelosApi` y los 
 
 ### DTOs
 - `Dtos/Reserva/CrearReservaDTO.cs`: se conserva el contrato que ya tenía `VuelosApi`: `PasajeroId`, `VueloId` y `AsientoId`.
-- `Dtos/Reserva/ReservaDTO.cs`: mantiene el formato de respuesta existente.
+- `Dtos/Reserva/ReservaDTO.cs`: la respuesta anida `vuelo` (`id`, `codigo`, `origen`, `destino`, `fechaSalida`) y `asiento` (`id`, `numero`, `categoria`), según el contrato 4.5. Los datos del pasajero siguen planos hasta resolver D1.
 
 El `UsuarioId` no se incluye en el DTO. El backend lo toma del claim del token JWT para evitar que el cliente elija a nombre de quién reservar.
 
