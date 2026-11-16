@@ -58,13 +58,19 @@ public class ReservasController : ControllerBase
     [HttpPost]
     [ProducesResponseType(typeof(ReservaDTO), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Crear([FromBody] CrearReservaDTO dto)
     {
+        if (UsuarioId <= 0)
+            return Problem(statusCode: StatusCodes.Status401Unauthorized, title: "No autenticado",
+                detail: "No se pudo identificar al usuario.");
+
         try
         {
-            var reserva = await _servicio.CrearAsync(dto, UsuarioId);
+            var reserva = await _servicio.CrearAsync(dto, UsuarioId, EsAdministrador);
             return CreatedAtAction(nameof(ObtenerPorId), new { id = reserva.Id }, reserva);
         }
         catch (KeyNotFoundException error)
@@ -77,7 +83,8 @@ public class ReservasController : ControllerBase
         }
         catch (UnauthorizedAccessException error)
         {
-            return Problem(statusCode: StatusCodes.Status401Unauthorized, title: "No autenticado", detail: error.Message);
+            // Por ejemplo, un usuario común que manda pasajeroId.
+            return SinPermiso(error);
         }
     }
 

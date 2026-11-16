@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text.RegularExpressions;
 using VuelosApi.Dtos.Reserva;
 using VuelosApi.Enums;
 using VuelosApi.Exceptions;
@@ -9,7 +11,7 @@ namespace VuelosApi.Services;
 // Reglas de negocio de las reservas. No accede a EF Core: todo pasa por IReservaRepository.
 // Errores que lanza (los traduce ReservasController):
 //   KeyNotFoundException        -> 404 (vuelo o asiento inexistente)
-//   UnauthorizedAccessException -> 403 (reserva de otro usuario)
+//   UnauthorizedAccessException -> 403 (reserva de otro usuario, o pasajeroId sin ser Administrador)
 //   ConflictoException          -> 409 (asiento ocupado, duplicado, vuelo no reservable, etc.)
 public class ReservaService : IReservaService
 {
@@ -42,10 +44,17 @@ public class ReservaService : IReservaService
         return ConvertirADTO(reserva);
     }
 
-    public async Task<ReservaDTO> CrearAsync(CrearReservaDTO dto, int usuarioId)
+    public async Task<ReservaDTO> CrearAsync(CrearReservaDTO dto, int usuarioId, bool esAdministrador)
     {
         if (usuarioId <= 0)
             throw new UnauthorizedAccessException("No se pudo identificar al usuario.");
+
+        // Privacidad: con un pasajeroId cualquiera, un usuario podría reservar a nombre de un pasajero
+        // que no cargó y ver su nombre y documento en la respuesta. Solo el Administrador lo usa
+        // ("Pasajero existente"); el resto manda los datos del pasajero y se busca por documento.
+        if (dto.PasajeroId.HasValue && !esAdministrador)
+            throw new UnauthorizedAccessException(
+                "Solo un administrador puede reservar eligiendo un pasajero existente. Cargá los datos del pasajero.");
 
         // 1. El vuelo debe existir, estar programado y no haber salido.
         var vuelo = await _repositorio.ObtenerVueloPorIdAsync(dto.VueloId);
@@ -143,15 +152,12 @@ public class ReservaService : IReservaService
         var existente = await _repositorio.ObtenerPasajeroPorDniAsync(documento);
         if (existente != null)
         {
-            // Un documento identifica a una sola persona: si los datos no coinciden, se avisa
-            // en lugar de reservar a nombre de otra persona.
-            bool coincide =
-                string.Equals(existente.Nombre.Trim(), nombre, StringComparison.CurrentCultureIgnoreCase) &&
-                string.Equals(existente.Apellido.Trim(), apellido, StringComparison.CurrentCultureIgnoreCase);
-
-            if (!coincide)
+            // Un documento identifica a una sola persona: si los datos no coinciden, no se reserva
+            // a nombre de otra persona. El mensaje es genérico a propósito: no muestra el nombre
+            // registrado, para que nadie pueda averiguar de quién es un documento.
+            if (!MismoNombre(existente.Nombre, nombre) || !MismoNombre(existente.Apellido, apellido))
                 throw new ConflictoException(
-                    $"El documento {documento} ya está registrado a nombre de {existente.Nombre} {existente.Apellido}. Revisá los datos del pasajero.");
+                    "No pudimos validar los datos del pasajero. Revisá que el nombre, el apellido y el documento sean correctos.");
 
             return existente;
         }
@@ -169,6 +175,19 @@ public class ReservaService : IReservaService
 
         await _repositorio.AgregarPasajeroAsync(nuevo);
         return nuevo;
+    }
+
+    // Compara nombres sin tener en cuenta mayúsculas, tildes ni espacios de más:
+    // "Ána  Pérez" y "ana perez" se consideran el mismo nombre.
+    private static bool MismoNombre(string registrado, string ingresado)
+    {
+        static string Normalizar(string texto) => Regex.Replace(texto.Trim(), @"\s+", " ");
+
+        return string.Compare(
+            Normalizar(registrado),
+            Normalizar(ingresado),
+            CultureInfo.InvariantCulture,
+            CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace) == 0;
     }
 
     private static ReservaDTO ConvertirADTO(Reserva reserva)

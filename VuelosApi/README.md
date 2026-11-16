@@ -38,7 +38,7 @@ Los errores `404` y `409` se devuelven en formato ProblemDetails (`title` y `det
 
 - `GET /api/pasajeros` - listar. Solo `Administrador`.
 - `GET /api/pasajeros/{id}` - detalle. Solo `Administrador`.
-- `POST /api/pasajeros` - crear. Cualquier usuario autenticado.
+- `POST /api/pasajeros` - crear. Solo `Administrador` (un usuario común carga el pasajero dentro de la reserva).
 - `DELETE /api/pasajeros/{id}` - eliminar solo si no tiene reservas asociadas. Solo `Administrador`.
 
 Ejemplo:
@@ -72,7 +72,7 @@ El pasajero se indica de una de dos formas (exactamente una). Con sus datos: se 
 
 `email` y `telefono` son opcionales y se guardan solo si el pasajero es nuevo.
 
-O con un pasajero ya existente (por ejemplo, creado con `POST /api/pasajeros`):
+O, solo un `Administrador`, con un pasajero ya existente (un usuario común que manda `pasajeroId` recibe 403):
 
 ```json
 {

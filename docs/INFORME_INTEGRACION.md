@@ -181,3 +181,16 @@ Se revisó el sistema completo. Los errores se confirmaron contra la API antes d
 | `frontend/README.md` indicaba comandos de npm | Pasan a pnpm | `frontend/README.md` |
 
 **Verificación después de integrar:** `dotnet build` sin warnings, `pnpm lint` sin errores, `pnpm build` OK. Contra Supabase: 25/25 casos de reservas y vuelos, 10/10 de compatibilidad de formatos, 6/6 de reserva repetida para el mismo DNI. En el navegador: landing con datos reales, reserva en pasos como Usuario (incluido un pasajero ya registrado), "Pasajero existente" como Administrador, Ver pase y cancelación.
+
+## 8. Revisión del módulo de reservas: privacidad de pasajeros
+
+Las reglas del módulo pasaron todas las pruebas (reservas 25/25, correcciones 15/15, mismo DNI en dos vuelos 6/6), pero la revisión encontró datos personales expuestos entre usuarios. Se corrigió:
+
+| Problema | Corrección | Archivos |
+|---|---|---|
+| Un Usuario podía reservar con el `pasajeroId` de un pasajero que no cargó (los ids son correlativos) y la respuesta le mostraba su nombre y DNI | `pasajeroId` solo para Administrador; un Usuario recibe 403. La pantalla de reserva ya manda los datos del pasajero | `Services/ReservaService.cs`, `Services/IReservaService.cs`, `Controllers/ReservasController.cs` |
+| Un DNI registrado con otro nombre respondía "ya está registrado a nombre de …", revelando de quién es | Mensaje genérico: "No pudimos validar los datos del pasajero. Revisá que el nombre, el apellido y el documento sean correctos." | `Services/ReservaService.cs` |
+| La misma persona escrita con otra tilde ("Ána" / "Ana") era rechazada | Los nombres se comparan sin mayúsculas, tildes ni espacios de más | `Services/ReservaService.cs` |
+| `POST /api/pasajeros` estaba abierto a cualquier usuario y permitía averiguar si un DNI existía | Todo `/api/pasajeros` queda para Administrador; sus errores pasan a ProblemDetails y `DELETE` responde 204 | `Controllers/PasajerosController.cs`, `frontend/src/api/pasajerosApi.js` |
+
+Verificación: privacidad 9/9, reservas 25/25, correcciones 15/15, mismo DNI 6/6, contra Supabase. `dotnet build` sin warnings, `pnpm lint` y `pnpm build` OK.

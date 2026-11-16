@@ -49,7 +49,7 @@ Actualizado el 16/11/2026 al integrar el módulo con Vuelos, Auth y el frontend.
 
 El `usuarioId` **no** viaja: se toma del claim `Id` del token (o `NameIdentifier` como respaldo).
 
-También se acepta un pasajero ya existente por id (lo usa el Administrador con "Pasajero existente", que lista `GET /api/pasajeros`):
+También se acepta un pasajero ya existente por id, **solo para el Administrador** (lo usa con "Pasajero existente", que lista `GET /api/pasajeros`). Si un Usuario común manda `pasajeroId` → 403: así nadie puede reservar a nombre de un pasajero que no cargó ni ver sus datos probando ids.
 
 ```json
 { "vueloId": 1, "asientoId": 101, "pasajeroId": 5 }
@@ -83,13 +83,14 @@ Hay que mandar **exactamente uno** de los dos (`pasajero` o `pasajeroId`); si fa
 2. El vuelo debe existir (404), estar **Programado** (409) y no haber salido (409).
 3. El asiento debe existir y pertenecer a ese vuelo (404).
 4. **Sin disponibilidad:** si el asiento ya tiene una reserva Confirmada → 409 "El asiento 02 ya está reservado."
-5. **Pasajero (D1):** se busca por documento. Si no existe se crea junto con la reserva; si existe se reutiliza. Si el documento ya está registrado con otro nombre/apellido → 409 (no se reserva a nombre de otra persona).
+5. **Pasajero (D1):** se busca por documento. Si no existe se crea junto con la reserva; si existe se reutiliza. El nombre y el apellido se comparan sin tener en cuenta mayúsculas, tildes ni espacios de más ("Ána Pérez" = "ana perez"). Si no coinciden → 409 con un mensaje genérico ("No pudimos validar los datos del pasajero…"), que **no revela** a nombre de quién está el documento.
 6. **Duplicados:** un pasajero no puede tener dos reservas Confirmadas en el mismo vuelo → 409.
 7. Precio: el del vuelo; los asientos Ejecutivos tienen un recargo del 50 %.
 8. **Concurrencia:** dos pedidos simultáneos por el mismo asiento los frena el índice único filtrado de PostgreSQL (`"Estado" = 0`); el repositorio traduce la violación a 409.
 9. **Cancelar (D2):** cancelación lógica. La reserva pasa a `Cancelada`, queda como historial y el asiento vuelve a estar disponible (D5: la disponibilidad se deriva de que no haya reserva Confirmada). Cancelar dos veces → 409. Tampoco se puede cancelar la reserva de un vuelo que ya salió → 409. Si el Administrador cancela el vuelo, sus reservas confirmadas se cancelan solas.
 10. Un Usuario solo ve y cancela sus reservas (403 si es ajena); el Administrador puede todas.
 11. No se elimina un pasajero que tenga reservas (aunque estén canceladas).
+12. **Privacidad de pasajeros:** `/api/pasajeros` (listar, ver, crear, eliminar) es solo para Administrador, porque tiene datos personales. Un Usuario común carga el pasajero dentro de la reserva.
 
 ## 4. Errores
 
