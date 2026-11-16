@@ -4,6 +4,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Microsoft.EntityFrameworkCore;
 using VuelosApi.Config;
+using VuelosApi.Middleware;
 using VuelosApi.Repositories;
 using VuelosApi.Services;
 
@@ -74,13 +75,16 @@ builder.Services
 builder.Services.AddAuthorization();
 
 // Repositorios y servicios de la aplicación.
-builder.Services.AddScoped(typeof(Repository<>));
+// Vuelos
 builder.Services.AddScoped<IVueloRepository, VueloRepository>();
 builder.Services.AddScoped<IVueloService, VueloService>();
-builder.Services.AddScoped<PasajerosService>();
-builder.Services.AddScoped<IReservaService, ReservaService>();
-builder.Services.AddScoped<IReservaRepository, ReservaRepository>();
+// Auth
 builder.Services.AddScoped<AuthService>();
+// Pasajeros y reservas
+builder.Services.AddScoped<IPasajeroRepository, PasajeroRepository>();
+builder.Services.AddScoped<PasajerosService>();
+builder.Services.AddScoped<IReservaRepository, ReservaRepository>();
+builder.Services.AddScoped<IReservaService, ReservaService>();
 
 // CORS: orígenes permitidos configurables. En desarrollo, Vite usa http://localhost:5173.
 var origenesPermitidos = builder.Configuration
@@ -98,6 +102,9 @@ builder.Services.AddCors(opciones =>
 });
 
 var app = builder.Build();
+
+// Manejo global de errores: cualquier excepción no controlada sale como ProblemDetails.
+app.UseMiddleware<ApiExceptionMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {
@@ -117,9 +124,19 @@ app.MapControllers();
 using (var scope = app.Services.CreateScope())
 {
     var contexto = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    await AdminSeeder.CrearAdministradorInicialAsync(contexto, app.Configuration);
 
-    // Datos de prueba de vuelos: solo en Development y solo si todavía no hay vuelos.
+    // Si la base no responde al arrancar, se avisa en el log pero la API igual levanta
+    // (antes se caía entera). Las peticiones fallarán con 500 hasta que vuelva la conexión.
+    try
+    {
+        await AdminSeeder.CrearAdministradorInicialAsync(contexto, app.Configuration);
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogError(ex, "No se pudo crear el administrador inicial. Revisá la conexión a la base.");
+    }
+
+    // Datos de prueba de vuelos: solo en Development. Agrega los que falten (por código).
     if (app.Environment.IsDevelopment())
     {
         try

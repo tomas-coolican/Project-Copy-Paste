@@ -50,6 +50,18 @@ export function adaptVuelo(dto) {
     precioBase: Number(dto.precio ?? dto.precioBase ?? 0),
     estado: getEnumLabel(ESTADO_VUELO, dto.estado),
     estadoCodigo: dto.estado,
+    // Solo viene en el detalle (GET /vuelos/{id}): el `id` es el que se envía al reservar.
+    asientos: Array.isArray(dto.asientos) ? dto.asientos.map(adaptAsiento) : [],
+  };
+}
+
+export function adaptAsiento(dto) {
+  return {
+    id: dto.id,
+    numero: dto.numero,
+    categoria: getEnumLabel(CATEGORIA_ASIENTO, dto.categoria),
+    categoriaCodigo: dto.categoria,
+    disponible: Boolean(dto.disponible),
   };
 }
 
@@ -61,7 +73,20 @@ export function adaptReserva(dto) {
     estadoCodigo: dto.estado,
     precioPagado: Number(dto.precioPagado),
     pasajeroId: dto.pasajeroId,
-    nombrePasajero: dto.nombrePasajero,
+    nombrePasajero:
+      dto.nombrePasajero ?? `${dto.pasajero?.nombre ?? ''} ${dto.pasajero?.apellido ?? ''}`.trim(),
+    documentoPasajero: dto.pasajero?.documento ?? '',
+    usuarioNombre: dto.usuarioNombre ?? '',
+    categoriaAsiento: getEnumLabel(CATEGORIA_ASIENTO, dto.asiento?.categoria, ''),
+    // Datos del vuelo que ya trae la reserva (para el pase y la lista de pasajeros).
+    vueloResumen: dto.vuelo
+      ? {
+          origen: dto.vuelo.origen,
+          destino: dto.vuelo.destino,
+          fechaSalida: parseApiDate(dto.vuelo.fechaSalida),
+          fechaLlegada: parseApiDate(dto.vuelo.fechaLlegada),
+        }
+      : null,
     vueloId: dto.vuelo?.id ?? dto.vueloId,
     numeroVuelo: dto.vuelo?.codigo ?? dto.numeroVuelo ?? '',
     asientoId: dto.asiento?.id ?? dto.asientoId,

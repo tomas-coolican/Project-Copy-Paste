@@ -110,5 +110,5 @@ Ejemplo:
 - **Config/AppDbContext:** configura Entity Framework y las relaciones de SQL Server.
 - **Enums:** estados y categorías con valores definidos.
 
-## Alcance de esta primera versión
-Incluye vuelos, pasajeros, asientos y reservas. La integración meteorológica Open-Meteo del proyecto anterior se puede incorporar como servicio independiente en una segunda etapa, sin mezclarla con las reglas de reservas.
+## Alcance de esta versión
+Incluye vuelos, pasajeros, asientos y reservas.

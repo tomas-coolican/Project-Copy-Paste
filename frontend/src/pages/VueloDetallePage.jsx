@@ -7,6 +7,7 @@ import ErrorMessage from '../components/ErrorMessage.jsx';
 import FlightTicket from '../components/FlightTicket.jsx';
 import Loading from '../components/Loading.jsx';
 import PageHeader from '../components/PageHeader.jsx';
+import ReservarAsiento from '../components/ReservarAsiento.jsx';
 import useAsync from '../hooks/useAsync.js';
 import { esReservable } from '../utils/vuelos.js';
 import { formatFechaLarga } from '../utils/formatDate.js';
@@ -75,10 +76,7 @@ function VueloDetalle({ id }) {
                   : 'La salida ya ocurrió. Elegí un vuelo futuro desde el listado.'}
               </Alert>
             ) : (
-              <Alert tone="info" title="La selección de asientos todavía no está disponible">
-                El backend aún no expone los asientos del vuelo. Podés consultar sus datos, pero la reserva no está
-                habilitada en esta versión.
-              </Alert>
+              <ReservarAsiento vuelo={vuelo} onCambio={reload} />
             )}
           </div>
         </>
