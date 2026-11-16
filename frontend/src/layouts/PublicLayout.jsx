@@ -1,4 +1,4 @@
-import { Link, Outlet } from 'react-router-dom';
+import { Link, Outlet, useLocation } from 'react-router-dom';
 import Button from '../components/Button.jsx';
 import { SECCIONES } from '../components/landing/secciones.js';
 import Masthead from '../components/Masthead.jsx';
@@ -6,18 +6,19 @@ import useAuth from '../hooks/useAuth.js';
 
 function AccionesPublicas() {
   const { user, isAuthenticated, logout } = useAuth();
+  const esLanding = useLocation().pathname === '/';
 
   if (!isAuthenticated) {
     return (
       <>
         <Link
           to="/login"
-          className="border-b border-transparent py-2 text-app-label font-medium text-ink-muted no-underline hover:border-accent hover:text-ink"
+          className="border-b border-transparent py-2 text-[12.5px] font-medium text-ink-muted no-underline hover:border-accent hover:text-ink"
         >
           Ingresar
         </Link>
-        <Button as={Link} to="/dashboard" size="sm" icon="arrow">
-          Abrir tablero
+        <Button as={Link} to={esLanding ? '/registro' : '/dashboard'} size="sm" icon="arrow">
+          {esLanding ? 'Crear cuenta' : 'Abrir tablero'}
         </Button>
       </>
     );
@@ -30,7 +31,7 @@ function AccionesPublicas() {
         Cerrar sesión
       </Button>
       <Button as={Link} to="/dashboard" size="sm" icon="arrow">
-        Abrir tablero
+        {esLanding ? 'Ir al tablero' : 'Abrir tablero'}
       </Button>
     </>
   );

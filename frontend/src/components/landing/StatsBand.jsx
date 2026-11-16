@@ -26,33 +26,26 @@ function Cifra({ label, children, indice, ultima }) {
   );
 }
 
-function formatEntero(valor) {
-  return valor === null ? '—' : new Intl.NumberFormat('es-AR').format(valor);
-}
-
-/**
- * Cifras de la operación, calculadas con los vuelos que devuelve la API. Si no hay datos
- * (cargando o sin conexión) las cifras quedan en "—": la banda nunca muestra un error propio.
- */
-export default function StatsBand({ resumen }) {
+/** Cifras ficticias de ejemplo del prototipo; nunca representan la operación en vivo. */
+export default function StatsBand() {
   const valores = [
-    ['Vuelos', resumen?.total ?? null],
-    ['Programados', resumen?.programados ?? null],
-    ['En vuelo', resumen?.enVuelo ?? null],
-    ['Asientos libres', resumen?.asientosLibres ?? null],
+    ['Vuelos', '24'],
+    ['Pasajeros', '1.284'],
+    ['Asientos libres', '312'],
+    ['Puntualidad', '94%'],
   ];
 
   return (
     <section aria-label="Resumen de la operación" className="bg-surface-band">
       <div className="mx-auto grid w-[min(100%-(var(--spacing-gutter)*2),var(--container-shell))] grid-cols-1 sm:grid-cols-2 md:grid-cols-[1.16fr_repeat(4,1fr)]">
         <div className={`flex items-baseline justify-between gap-1.5 border-b py-4 ${DIVIDER} sm:col-span-2 sm:py-[18px] md:col-span-1 md:flex-col md:items-stretch md:justify-between md:border-b-0 md:border-r md:py-[22px] md:pl-0 md:pr-6`}>
-          <span className="font-mono text-app-label uppercase tracking-[0.1em]">Operación actual</span>
-          <span className="text-app-label text-ink-muted">Según los vuelos cargados</span>
+          <span className="font-mono text-app-label uppercase tracking-[0.1em]">Operación de hoy</span>
+          <span className="text-app-label text-ink-muted">Datos de ejemplo</span>
         </div>
         <dl className="contents m-0">
           {valores.map(([label, valor], indice) => (
             <Cifra key={label} label={label} indice={indice} ultima={indice === valores.length - 1}>
-              {formatEntero(valor)}
+              {valor}
             </Cifra>
           ))}
         </dl>
