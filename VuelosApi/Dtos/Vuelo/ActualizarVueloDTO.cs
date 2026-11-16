@@ -1,21 +1,9 @@
-using System.ComponentModel.DataAnnotations;
 using VuelosApi.Enums;
 
 namespace VuelosApi.Dtos.Vuelo;
 
-public class ActualizarVueloDTO
+public class ActualizarVueloDTO : VueloEntradaDTO
 {
-    [Required, MaxLength(80)]
-    public string Origen { get; set; } = string.Empty;
-
-    [Required, MaxLength(80)]
-    public string Destino { get; set; } = string.Empty;
-
-    public DateTime FechaSalida { get; set; }
-    public DateTime FechaLlegada { get; set; }
-
-    [Range(0, 100000000)]
-    public decimal PrecioBase { get; set; }
-
-    public EstadoVuelo Estado { get; set; }
+    // Opcional (no figura en el contrato): si no se envía, el estado no cambia.
+    public EstadoVuelo? Estado { get; set; }
 }

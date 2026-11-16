@@ -1,0 +1,62 @@
+const DIVIDER = 'border-dashed border-line-strong';
+
+// Posición de cada cifra en la grilla de 2 × 2 (620–900 px) y en la fila de 5 columnas (≥ 900 px).
+function clasesCifra(indice, ultima) {
+  const columnaIzquierda = indice % 2 === 0;
+  return [
+    // < 620 px: filas con etiqueta a la izquierda y cifra a la derecha.
+    `flex items-baseline justify-between gap-[18px] border-b py-3.5 ${DIVIDER}`,
+    ultima ? 'border-b-0' : '',
+    // 620–900 px
+    `sm:block sm:py-4 ${columnaIzquierda ? `sm:border-r sm:pl-0 sm:pr-[18px] ${DIVIDER}` : 'sm:border-r-0 sm:pl-[18px] sm:pr-0'}`,
+    indice >= 2 ? 'sm:border-b-0' : '',
+    // ≥ 900 px
+    `md:border-b-0 md:py-5 md:pl-[22px] md:pr-[22px] ${ultima ? 'md:border-r-0' : `md:border-r ${DIVIDER}`}`,
+  ].join(' ');
+}
+
+function Cifra({ label, children, indice, ultima }) {
+  return (
+    <div className={clasesCifra(indice, ultima)}>
+      <dt className="block font-mono text-app-label uppercase text-ink-muted">{label}</dt>
+      <dd className="m-0 mt-1.5 block font-mono text-[1.9rem] font-medium leading-none tracking-[-0.04em] sm:text-[clamp(1.9rem,2.6vw,2.45rem)] max-sm:mt-0">
+        {children}
+      </dd>
+    </div>
+  );
+}
+
+function formatEntero(valor) {
+  return valor === null ? '—' : new Intl.NumberFormat('es-AR').format(valor);
+}
+
+/**
+ * Cifras de la operación, calculadas con los vuelos que devuelve la API. Si no hay datos
+ * (cargando o sin conexión) las cifras quedan en "—": la banda nunca muestra un error propio.
+ */
+export default function StatsBand({ resumen }) {
+  const valores = [
+    ['Vuelos', resumen?.total ?? null],
+    ['Programados', resumen?.programados ?? null],
+    ['En vuelo', resumen?.enVuelo ?? null],
+    ['Asientos libres', resumen?.asientosLibres ?? null],
+  ];
+
+  return (
+    <section aria-label="Resumen de la operación" className="bg-surface-band">
+      <div className="mx-auto grid w-[min(100%-(var(--spacing-gutter)*2),var(--container-shell))] grid-cols-1 sm:grid-cols-2 md:grid-cols-[1.16fr_repeat(4,1fr)]">
+        <div className={`flex items-baseline justify-between gap-1.5 border-b py-4 ${DIVIDER} sm:col-span-2 sm:py-[18px] md:col-span-1 md:flex-col md:items-stretch md:justify-between md:border-b-0 md:border-r md:py-[22px] md:pl-0 md:pr-6`}>
+          <span className="font-mono text-app-label uppercase tracking-[0.1em]">Operación actual</span>
+          <span className="text-app-label text-ink-muted">Según los vuelos cargados</span>
+        </div>
+        <dl className="contents m-0">
+          {valores.map(([label, valor], indice) => (
+            <Cifra key={label} label={label} indice={indice} ultima={indice === valores.length - 1}>
+              {formatEntero(valor)}
+            </Cifra>
+          ))}
+        </dl>
+      </div>
+    </section>
+  );
+}

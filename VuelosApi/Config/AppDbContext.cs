@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using VuelosApi.Models;
 
 namespace VuelosApi.Config;
@@ -13,27 +14,39 @@ public class AppDbContext : DbContext
     public DbSet<Pasajero> Pasajeros => Set<Pasajero>();
     public DbSet<Asiento> Asientos => Set<Asiento>();
     public DbSet<Reserva> Reservas => Set<Reserva>();
+    public DbSet<Usuario> Usuarios => Set<Usuario>();
+
+    // Todas las fechas se escriben y se leen como UTC (así la API las serializa siempre con "Z").
+    // PostgreSQL (timestamptz) rechaza fechas con Kind Local o Unspecified; esto las normaliza.
+    protected override void ConfigureConventions(ModelConfigurationBuilder configuracion)
+    {
+        configuracion.Properties<DateTime>().HaveConversion<FechaUtcConverter>();
+    }
 
     protected override void OnModelCreating(ModelBuilder modelo)
     {
         base.OnModelCreating(modelo);
 
-        modelo.Entity<Vuelo>()
-            .HasIndex(v => v.NumeroVuelo)
-            .IsUnique();
+        modelo.Entity<Vuelo>().HasIndex(v => v.NumeroVuelo).IsUnique();
+        modelo.Entity<Usuario>().HasIndex(u => u.Email).IsUnique();
+        modelo.Entity<Pasajero>().HasIndex(p => p.DNI).IsUnique();
+        modelo.Entity<Asiento>().HasIndex(a => new { a.VueloId, a.Numero }).IsUnique();
 
-        modelo.Entity<Pasajero>()
-            .HasIndex(p => p.DNI)
-            .IsUnique();
-
-        modelo.Entity<Asiento>()
-            .HasIndex(a => new { a.VueloId, a.Numero })
-            .IsUnique();
-
+        // Estado = 0 es Confirmada. Un asiento y un pasajero (por vuelo)
+        // solo pueden tener una reserva confirmada.
         modelo.Entity<Reserva>()
             .HasIndex(r => r.AsientoId)
-            .IsUnique();
+            .IsUnique()
+            .HasFilter("\"Estado\" = 0");
 
+        modelo.Entity<Reserva>()
+            .HasIndex(r => new { r.PasajeroId, r.VueloId })
+            .IsUnique()
+            .HasFilter("\"Estado\" = 0");
+
+        modelo.Entity<Reserva>().HasIndex(r => r.UsuarioId);
+
+        // Al borrar un vuelo se borran sus asientos. Con las reservas no se borra nada en cascada.
         modelo.Entity<Vuelo>()
             .HasMany(v => v.Asientos)
             .WithOne(a => a.Vuelo)
@@ -41,24 +54,35 @@ public class AppDbContext : DbContext
             .OnDelete(DeleteBehavior.Cascade);
 
         modelo.Entity<Reserva>()
-            .HasOne(r => r.Pasajero)
-            .WithMany(p => p.Reservas)
-            .HasForeignKey(r => r.PasajeroId)
-            .OnDelete(DeleteBehavior.Restrict);
+            .HasOne(r => r.Usuario).WithMany(u => u.Reservas)
+            .HasForeignKey(r => r.UsuarioId).OnDelete(DeleteBehavior.Restrict);
 
         modelo.Entity<Reserva>()
-            .HasOne(r => r.Vuelo)
-            .WithMany(v => v.Reservas)
-            .HasForeignKey(r => r.VueloId)
-            .OnDelete(DeleteBehavior.Restrict);
+            .HasOne(r => r.Pasajero).WithMany(p => p.Reservas)
+            .HasForeignKey(r => r.PasajeroId).OnDelete(DeleteBehavior.Restrict);
 
         modelo.Entity<Reserva>()
-            .HasOne(r => r.Asiento)
-            .WithMany(a => a.Reservas)
-            .HasForeignKey(r => r.AsientoId)
-            .OnDelete(DeleteBehavior.Restrict);
+            .HasOne(r => r.Vuelo).WithMany(v => v.Reservas)
+            .HasForeignKey(r => r.VueloId).OnDelete(DeleteBehavior.Restrict);
+
+        modelo.Entity<Reserva>()
+            .HasOne(r => r.Asiento).WithMany(a => a.Reservas)
+            .HasForeignKey(r => r.AsientoId).OnDelete(DeleteBehavior.Restrict);
 
         modelo.Entity<Vuelo>().Property(v => v.PrecioBase).HasPrecision(10, 2);
         modelo.Entity<Reserva>().Property(r => r.PrecioPagado).HasPrecision(10, 2);
+    }
+}
+
+public class FechaUtcConverter : ValueConverter<DateTime, DateTime>
+{
+    public FechaUtcConverter() : base(
+        // Al guardar: se normaliza a UTC.
+        fecha => fecha.Kind == DateTimeKind.Local
+            ? fecha.ToUniversalTime()
+            : DateTime.SpecifyKind(fecha, DateTimeKind.Utc),
+        // Al leer: se marca como UTC.
+        fecha => DateTime.SpecifyKind(fecha, DateTimeKind.Utc))
+    {
     }
 }

@@ -2,25 +2,19 @@ using System.ComponentModel.DataAnnotations;
 
 namespace VuelosApi.Dtos.Vuelo;
 
-public class CrearVueloDTO
+public class CrearVueloDTO : VueloEntradaDTO
 {
-    [Required, MaxLength(20)]
-    public string NumeroVuelo { get; set; } = string.Empty;
-
-    [Required, MaxLength(80)]
-    public string Origen { get; set; } = string.Empty;
-
-    [Required, MaxLength(80)]
-    public string Destino { get; set; } = string.Empty;
-
-    public DateTime FechaSalida { get; set; }
-    public DateTime FechaLlegada { get; set; }
-
-    [Range(1, 500)]
-    public int Capacidad { get; set; }
-
-    [Range(0, 100000000)]
-    public decimal PrecioBase { get; set; }
-
+    // Opcional (no figura en el contrato): los primeros N asientos se crean como Ejecutivo.
     public int CantidadAsientosEjecutivos { get; set; } = 0;
+
+    public override IEnumerable<ValidationResult> Validate(ValidationContext contexto)
+    {
+        foreach (var error in base.Validate(contexto))
+            yield return error;
+
+        if (CantidadAsientosEjecutivos < 0 || CantidadAsientosEjecutivos > CantidadAsientos)
+            yield return new ValidationResult(
+                "La cantidad de asientos ejecutivos no puede superar la cantidad total de asientos.",
+                new[] { nameof(CantidadAsientosEjecutivos) });
+    }
 }

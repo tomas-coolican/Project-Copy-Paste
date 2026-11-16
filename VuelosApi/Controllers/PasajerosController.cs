@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using VuelosApi.Dtos.Pasajero;
 using VuelosApi.Services;
@@ -6,6 +7,7 @@ namespace VuelosApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class PasajerosController : ControllerBase
 {
     private readonly PasajerosService _servicio;
@@ -15,12 +17,14 @@ public class PasajerosController : ControllerBase
         _servicio = servicio;
     }
 
+    [Authorize(Roles = "Administrador")]
     [HttpGet]
     public async Task<IActionResult> ObtenerTodos()
     {
         return Ok(await _servicio.ObtenerTodosAsync());
     }
 
+    [Authorize(Roles = "Administrador")]
     [HttpGet("{id:int}")]
     public async Task<IActionResult> ObtenerPorId(int id)
     {
@@ -39,10 +43,11 @@ public class PasajerosController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
-            return BadRequest(new { mensaje = ex.Message });
+            return Conflict(new { mensaje = ex.Message });
         }
     }
 
+    [Authorize(Roles = "Administrador")]
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Eliminar(int id)
     {
@@ -54,7 +59,7 @@ public class PasajerosController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
-            return BadRequest(new { mensaje = ex.Message });
+            return Conflict(new { mensaje = ex.Message });
         }
     }
 }
