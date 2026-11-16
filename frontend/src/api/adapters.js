@@ -60,6 +60,8 @@ export function adaptAsiento(dto) {
     categoria: getEnumLabel(CATEGORIA_ASIENTO, dto.categoria),
     categoriaCodigo: dto.categoria,
     disponible: Boolean(dto.disponible),
+    // La API todavía no informa el precio por asiento; si lo agrega, se usa tal cual (nunca se calcula acá).
+    precio: dto.precio === undefined || dto.precio === null ? null : Number(dto.precio),
   };
 }
 

@@ -14,6 +14,7 @@ import PasajeroForm from '../components/PasajeroForm.jsx';
 import PasajeroSelector from '../components/PasajeroSelector.jsx';
 import ReservaPasos from '../components/ReservaPasos.jsx';
 import ReservaResumen from '../components/ReservaResumen.jsx';
+import ResumenReserva from '../components/ResumenReserva.jsx';
 import SeatMap, { MarcaLeyenda } from '../components/SeatMap.jsx';
 import TextLink from '../components/TextLink.jsx';
 import useAsync from '../hooks/useAsync.js';
@@ -22,6 +23,8 @@ import { agruparEnFilas, etiquetaDeFila } from '../utils/asientos.js';
 import { esReservable } from '../utils/vuelos.js';
 
 const SHELL = 'mx-auto w-[min(100%-(var(--spacing-gutter)*2),var(--container-shell))]';
+// Secuencia: asiento → pasajero → resumen → (confirmar) → comprobante.
+const PASOS = { asiento: 0, pasajero: 1, resumen: 2, comprobante: 3 };
 const CAMPOS_PASAJERO = ['nombre', 'apellido', 'dni', 'email', 'telefono'];
 
 function VolverAlVuelo({ id }) {
@@ -59,7 +62,6 @@ function Reservar({ id }) {
   const ayudaId = useId();
   const encabezado = useRef(null);
   const enviando = useRef(false);
-  const ultimosDatos = useRef(null);
 
   const { data, error, loading, retrying, updatedAt, reload } = useAsync(() => vuelosApi.obtenerDetalle(id));
   const [asientosFrescos, setAsientosFrescos] = useState(null);
@@ -67,6 +69,8 @@ function Reservar({ id }) {
   const [seleccionadoId, setSeleccionadoId] = useState(null);
   const [modo, setModo] = useState('nuevo');
   const [pasajero, setPasajero] = useState(null);
+  const [datosNuevo, setDatosNuevo] = useState(null);
+  const [pasajeroListo, setPasajeroListo] = useState(false);
   const [reserva, setReserva] = useState(null);
   const [pendiente, setPendiente] = useState(false);
   const [errorAccion, setErrorAccion] = useState(null);
@@ -89,25 +93,25 @@ function Reservar({ id }) {
     if (paso !== 'asiento') encabezado.current?.focus();
   }, [paso]);
 
-  async function refrescarAsientos() {
-    try {
-      setAsientosFrescos(await vuelosApi.obtenerAsientos(id));
-    } catch {
-      // Si falla la recarga, el siguiente intento de reserva vuelve a avisar.
-    }
+  function irA(destino) {
+    setErrorAccion(null);
+    setErroresCampo(null);
+    setPaso(destino);
   }
 
   function elegirModo(nuevo) {
+    // Cambiar a "nuevo" descarta al pasajero existente elegido: el resumen usa lo que se cargue.
+    if (nuevo === 'nuevo') setPasajero(null);
     setModo(nuevo);
     setErrorAccion(null);
     setErroresCampo(null);
   }
 
-  async function confirmar(datosNuevo) {
-    if (enviando.current || !vuelo || !asiento) return;
+  /** Crea el pasajero (si es nuevo) y la reserva. Solo se llama desde el resumen. */
+  async function confirmar() {
+    if (enviando.current || !vuelo || !asiento || (!pasajero && !datosNuevo)) return;
 
     enviando.current = true;
-    ultimosDatos.current = datosNuevo ?? null;
     setPendiente(true);
     setErrorAccion(null);
     setErroresCampo(null);
@@ -128,23 +132,44 @@ function Reservar({ id }) {
       setReserva(creada);
       setPaso('comprobante');
     } catch (fallo) {
-      if (etapa === 'pasajero') {
-        // Falló el alta del pasajero: 409 (DNI repetido) o validación de campos.
-        manejarFalloPasajero(fallo);
-      } else if (fallo.status === 409 && /asiento/i.test(fallo.message)) {
-        // Otro usuario tomó el asiento: se recarga el mapa y se vuelve a la selección.
-        setAsientoTomado(true);
-        setSeleccionadoId(null);
-        setPaso('asiento');
-        setFocusSignal((n) => n + 1);
-        await refrescarAsientos();
-      } else {
-        setErrorAccion(fallo);
-      }
+      await manejarFallo(fallo, etapa);
     } finally {
       enviando.current = false;
       setPendiente(false);
     }
+  }
+
+  async function manejarFallo(fallo, etapa) {
+    // 401: la sesión venció. El cliente ya cerró la sesión y redirige al login con el destino guardado.
+    if (fallo.status === 401) return;
+
+    if (etapa === 'pasajero') {
+      manejarFalloPasajero(fallo);
+      return;
+    }
+
+    if (fallo.status === 409) {
+      // El 409 no trae un código: se pregunta al servidor si el asiento sigue libre.
+      // Si ya no lo está, se vuelve a la selección; si sigue libre, el conflicto es otro y se muestra su mensaje.
+      const frescos = await vuelosApi.obtenerAsientos(id).catch(() => null);
+      const actual = frescos?.find((a) => a.id === seleccionadoId);
+
+      if (frescos) setAsientosFrescos(frescos);
+
+      if (actual && !actual.disponible) {
+        setAsientoTomado(true);
+        setSeleccionadoId(null);
+        setPaso('asiento');
+        setFocusSignal((n) => n + 1);
+        return;
+      }
+    }
+
+    // 404: el vuelo, el asiento o el pasajero ya no existen. Se recarga el vuelo; si desapareció,
+    // la pantalla pasa a "Vuelo no encontrado". En cualquier caso se muestra el mensaje del servidor.
+    if (fallo.status === 404) reload();
+
+    setErrorAccion(fallo);
   }
 
   function manejarFalloPasajero(fallo) {
@@ -156,17 +181,35 @@ function Reservar({ id }) {
       setErroresCampo({ dni: 'Ya existe un pasajero con ese DNI. Buscalo en "Pasajero existente".' });
     } else {
       setErrorAccion(fallo);
+      return;
     }
+
+    // El alta falló por datos del pasajero: se vuelve al formulario con los valores cargados.
+    setPaso('pasajero');
+  }
+
+  function continuarConNuevo(datos) {
+    setDatosNuevo(datos);
+    setPasajero(null);
+    setPasajeroListo(true);
+    irA('resumen');
+  }
+
+  function continuarConExistente() {
+    setPasajeroListo(true);
+    irA('resumen');
   }
 
   const titulos = {
     asiento: 'Elegí tu asiento',
     pasajero: 'Datos del pasajero',
+    resumen: 'Revisá tu reserva',
     comprobante: nombreUsuario ? `Todo listo, ${nombreUsuario}.` : 'Reserva confirmada',
   };
   const leads = {
     asiento: 'Elegí un asiento libre del mapa. Después cargás o elegís al pasajero.',
     pasajero: 'El pasajero es quien viaja. Podés cargar uno nuevo o reutilizar uno existente.',
+    resumen: 'Controlá los datos. Al confirmar se crea la reserva y el asiento queda bloqueado.',
     comprobante: 'Guardá el comprobante: el asiento ya está bloqueado a nombre del pasajero.',
   };
 
@@ -207,118 +250,153 @@ function Reservar({ id }) {
       </EmptyState>
     );
   } else if (vuelo) {
-    const enPasajero = paso === 'pasajero';
-    const accionAsiento = (
-      <Button disabled={!asiento} icon="arrow" onClick={() => setPaso('pasajero')}>
-        Continuar con el pasajero
-      </Button>
-    );
-    const accionReserva = (
-      <Button
-        icon="arrow"
-        pending={pendiente}
-        pendingLabel="Creando reserva…"
-        disabled={modo === 'existente' && !pasajero}
-        {...(modo === 'nuevo' ? { type: 'submit', form: 'pasajero-form' } : { onClick: () => confirmar() })}
-      >
-        Crear reserva
-      </Button>
+    const resumenPasajero = pasajero ?? (datosNuevo ? { ...datosNuevo, nombreCompleto: `${datosNuevo.nombre} ${datosNuevo.apellido}` } : null);
+    const botonAtras = (texto, destino) => (
+      <TextLink as="button" type="button" icon={null} size="sm" onClick={() => irA(destino)}>
+        {texto}
+      </TextLink>
     );
 
-    cuerpo = (
-      <div className="grid gap-x-12 gap-y-8 pb-24 md:grid-cols-[minmax(0,1fr)_320px] md:pb-0">
-        <div className="min-w-0">
-          {asientoTomado && !enPasajero && (
+    let accion;
+    let atras;
+    let contenido;
+
+    if (paso === 'asiento') {
+      accion = (
+        <Button disabled={!asiento} icon="arrow" onClick={() => irA(pasajeroListo ? 'resumen' : 'pasajero')}>
+          {pasajeroListo ? 'Volver al resumen' : 'Continuar con el pasajero'}
+        </Button>
+      );
+      atras = asiento && (
+        <TextLink as="button" type="button" icon={null} size="sm" onClick={() => setSeleccionadoId(null)}>
+          Quitar selección
+        </TextLink>
+      );
+      contenido = (
+        <>
+          {asientoTomado && (
             <Alert tone="danger" title="Ese asiento acaba de ocuparse" className="mb-8">
               Elegí otro asiento libre del mapa.
             </Alert>
           )}
-
-          {!enPasajero ? (
-            <div className="flex flex-col gap-8 lg:flex-row lg:gap-12">
-              <div className="order-2 min-w-0 flex-1 lg:order-1">
-                <SeatMap
-                  asientos={asientos}
-                  seleccionadoId={seleccionadoId}
-                  onSelect={(elegido) => {
-                    setSeleccionadoId(elegido?.id ?? null);
-                    setAsientoTomado(false);
-                  }}
-                  focusSignal={focusSignal}
-                  ayudaId={ayudaId}
-                />
-              </div>
-              <div className="order-1 lg:order-2">
-                <Leyenda id={ayudaId} />
-              </div>
+          <div className="flex flex-col gap-8 lg:flex-row lg:gap-12">
+            <div className="order-2 min-w-0 flex-1 lg:order-1">
+              <SeatMap
+                asientos={asientos}
+                seleccionadoId={seleccionadoId}
+                onSelect={(elegido) => {
+                  setSeleccionadoId(elegido?.id ?? null);
+                  setAsientoTomado(false);
+                }}
+                focusSignal={focusSignal}
+                ayudaId={ayudaId}
+              />
             </div>
+            <div className="order-1 lg:order-2">
+              <Leyenda id={ayudaId} />
+            </div>
+          </div>
+        </>
+      );
+    } else if (paso === 'pasajero') {
+      accion =
+        modo === 'nuevo' ? (
+          <Button type="submit" form="pasajero-form" icon="arrow">
+            Revisar reserva
+          </Button>
+        ) : (
+          <Button disabled={!pasajero} icon="arrow" onClick={continuarConExistente}>
+            Revisar reserva
+          </Button>
+        );
+      atras = botonAtras('Volver al asiento', 'asiento');
+      contenido = (
+        <div className="flex max-w-[640px] flex-col gap-6">
+          {errorAccion && <ErrorMessage error={errorAccion} title="No pudimos guardar al pasajero" />}
+
+          <div role="group" aria-label="Tipo de pasajero" className="flex gap-6 border-b border-line">
+            {[
+              ['nuevo', 'Pasajero nuevo'],
+              ['existente', 'Pasajero existente'],
+            ].map(([valor, texto]) => (
+              <button
+                key={valor}
+                type="button"
+                aria-pressed={modo === valor}
+                onClick={() => elegirModo(valor)}
+                className={`min-h-(--size-touch) border-b-2 text-app-body-sm transition-colors duration-(--duration-state) ${modo === valor ? 'border-accent text-ink' : 'border-transparent text-ink-faint hover:text-ink'}`}
+              >
+                {texto}
+              </button>
+            ))}
+          </div>
+
+          {modo === 'nuevo' ? (
+            <PasajeroForm defaultValues={datosNuevo ?? undefined} serverErrors={erroresCampo} onSubmit={continuarConNuevo} />
           ) : (
-            <div className="flex max-w-[640px] flex-col gap-6">
-              {errorAccion && (
-                <ErrorMessage
-                  error={errorAccion}
-                  title="No pudimos crear la reserva"
-                  onRetry={errorAccion.isNetworkError ? () => confirmar(ultimosDatos.current ?? undefined) : undefined}
-                  retrying={pendiente}
-                />
-              )}
-
-              <div role="group" aria-label="Tipo de pasajero" className="flex gap-6 border-b border-line">
-                {[
-                  ['nuevo', 'Pasajero nuevo'],
-                  ['existente', 'Pasajero existente'],
-                ].map(([valor, texto]) => (
-                  <button
-                    key={valor}
-                    type="button"
-                    aria-pressed={modo === valor}
-                    onClick={() => elegirModo(valor)}
-                    className={`min-h-(--size-touch) border-b-2 text-app-body-sm transition-colors duration-(--duration-state) ${modo === valor ? 'border-accent text-ink' : 'border-transparent text-ink-faint hover:text-ink'}`}
-                  >
-                    {texto}
-                  </button>
-                ))}
-              </div>
-
-              {modo === 'nuevo' ? (
-                <PasajeroForm serverErrors={erroresCampo} onSubmit={confirmar} />
-              ) : (
-                <PasajeroSelector seleccionado={pasajero} onSelect={setPasajero} />
-              )}
-
-              <TextLink as="button" type="button" icon={null} onClick={() => setPaso('asiento')} className="self-start">
-                Volver al asiento
-              </TextLink>
-            </div>
+            <PasajeroSelector seleccionado={pasajero} onSelect={setPasajero} />
           )}
         </div>
+      );
+    } else {
+      accion = (
+        <Button icon="arrow" pending={pendiente} pendingLabel="Creando reserva…" onClick={confirmar}>
+          Confirmar reserva
+        </Button>
+      );
+      atras = botonAtras('Volver al pasajero', 'pasajero');
+      contenido = (
+        <div className="flex flex-col gap-6">
+          {errorAccion && (
+            <ErrorMessage
+              error={errorAccion}
+              title="No pudimos crear la reserva"
+              onRetry={errorAccion.isNetworkError ? confirmar : undefined}
+              retrying={pendiente}
+              action={
+                errorAccion.status === 404 ? (
+                  <Button as={Link} to="/dashboard/vuelos" variant="secondary" size="sm">
+                    Volver al listado
+                  </Button>
+                ) : undefined
+              }
+            />
+          )}
+          {asiento && resumenPasajero && (
+            <ResumenReserva
+              vuelo={vuelo}
+              pasajero={resumenPasajero}
+              asiento={asiento}
+              etiquetaFila={etiquetaFila}
+              onCambiarAsiento={() => irA('asiento')}
+              onCambiarPasajero={() => irA('pasajero')}
+            />
+          )}
+        </div>
+      );
+    }
 
+    cuerpo = (
+      <div className="grid gap-x-12 gap-y-8 pb-24 md:grid-cols-[minmax(0,1fr)_320px] md:pb-0">
+        <div className="min-w-0">{contenido}</div>
         <ReservaResumen
           vuelo={vuelo}
           asiento={asiento}
           etiquetaFila={etiquetaFila}
-          pasajero={pasajero?.nombreCompleto}
+          pasajero={paso !== 'asiento' ? resumenPasajero?.nombreCompleto : undefined}
           actions={
-            enPasajero ? (
-              accionReserva
-            ) : (
-              <>
-                {accionAsiento}
-                {asiento && (
-                  <TextLink as="button" type="button" icon={null} size="sm" onClick={() => setSeleccionadoId(null)}>
-                    Quitar selección
-                  </TextLink>
-                )}
-              </>
-            )
+            <>
+              {accion}
+              {atras}
+            </>
           }
-          barAction={enPasajero ? accionReserva : accionAsiento}
+          barAction={accion}
         />
       </div>
     );
   }
 
-  const pasoActual = { asiento: 0, pasajero: 1, comprobante: 2 }[paso];
+  const pasoActual = PASOS[paso];
 
   return (
     <div className={`${SHELL} py-10`}>

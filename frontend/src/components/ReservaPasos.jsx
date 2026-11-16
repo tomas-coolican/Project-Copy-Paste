@@ -1,8 +1,8 @@
 import Icon from './Icon.jsx';
 
-const PASOS = ['Asiento', 'Pasajero', 'Confirmar'];
+const PASOS = ['Asiento', 'Pasajero', 'Resumen', 'Comprobante'];
 
-/** Indicador de pasos del flujo de reserva. `actual`: 0 (asiento), 1 (pasajero) o 2 (confirmar). */
+/** Indicador de pasos del flujo de reserva. `actual`: 0 asiento, 1 pasajero, 2 resumen (se confirma acá), 3 comprobante. */
 export default function ReservaPasos({ actual, className = '' }) {
   return (
     <ol aria-label="Pasos de la reserva" className={`m-0 flex list-none flex-wrap items-center gap-x-5 gap-y-2 p-0 ${className}`}>

@@ -15,10 +15,11 @@ function Fila({ label, children }) {
 /**
  * Resumen de la reserva en curso. En escritorio es un riel fijo de 320 px; por debajo de 900 px
  * pasa a una barra inferior con el asiento y la acción. `actions` va en el riel; `barAction`, en la barra.
- * Todavía no hay precio por asiento en la API: se muestra el precio base y se avisa que el final
- * (según categoría) lo calcula el servidor al crear la reserva.
+ * Si el asiento trae `precio` (la API todavía no lo informa) se muestra ese; si no, el precio base
+ * y un aviso: el recargo por categoría lo calcula el servidor al crear la reserva.
  */
 export default function ReservaResumen({ vuelo, asiento, etiquetaFila, pasajero, actions, barAction }) {
+  const conPrecio = asiento?.precio !== null && asiento?.precio !== undefined;
   const detalle = asiento ? `${asiento.categoria}${etiquetaFila ? ` · fila ${etiquetaFila}` : ''}` : 'Elegí un asiento libre';
 
   return (
@@ -38,15 +39,17 @@ export default function ReservaResumen({ vuelo, asiento, etiquetaFila, pasajero,
               {vuelo.origen} → {vuelo.destino}
             </Fila>
             <Fila label="Salida">{formatFechaHora(vuelo.fechaSalida)}</Fila>
-            <Fila label="Precio base">{formatCurrency(vuelo.precioBase)}</Fila>
+            <Fila label={conPrecio ? 'Precio' : 'Precio base'}>{formatCurrency(conPrecio ? asiento.precio : vuelo.precioBase)}</Fila>
             {pasajero && <Fila label="Pasajero">{pasajero}</Fila>}
           </dl>
 
           <div className="mt-5 flex flex-col items-start gap-3">{actions}</div>
-          <p className="m-0 mt-4 text-app-body-sm text-ink-faint">
-            El precio final depende de la categoría y se confirma al crear la reserva. Si el asiento ya fue tomado,
-            vas a poder elegir otro.
-          </p>
+          {!conPrecio && (
+            <p className="m-0 mt-4 text-app-body-sm text-ink-faint">
+              El precio final depende de la categoría y lo calcula el servidor al crear la reserva: lo vas a ver en el
+              comprobante.
+            </p>
+          )}
         </div>
       </aside>
 
