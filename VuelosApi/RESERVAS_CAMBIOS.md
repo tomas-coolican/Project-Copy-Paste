@@ -8,8 +8,8 @@ Actualizado el 16/11/2026 al integrar el módulo con Vuelos, Auth y el frontend.
 |---|---|---|
 | Models | `Models/Pasajero.cs` | Nombre, apellido, DNI (único), email, teléfono y navegación a sus reservas. |
 | Models | `Models/Reserva.cs` | Fecha, estado, precio pagado y FKs a `Usuario`, `Pasajero`, `Vuelo` y `Asiento`. |
-| DTOs (entrada) | `Dtos/Reserva/CrearReservaDTO.cs` | `vueloId`, `asientoId` y `pasajero` anidado (contrato 4.5). |
-| DTOs (entrada) | `Dtos/Reserva/PasajeroReservaDTO.cs` | `nombre`, `apellido`, `documento`, con validaciones. |
+| DTOs (entrada) | `Dtos/Reserva/CrearReservaDTO.cs` | `vueloId`, `asientoId` y el pasajero: `pasajero` anidado (contrato 4.5) o `pasajeroId` (exactamente uno). |
+| DTOs (entrada) | `Dtos/Reserva/PasajeroReservaDTO.cs` | `nombre`, `apellido`, `documento` (obligatorios) y `email`, `telefono` (opcionales), con validaciones. |
 | DTOs (salida) | `Dtos/Reserva/ReservaDTO.cs` | Reserva con `vuelo`, `asiento` y `pasajero` anidados. |
 | DTOs (salida) | `Dtos/Reserva/ReservaVueloDTO.cs`, `ReservaAsientoDTO.cs`, `ReservaPasajeroDTO.cs` | Partes anidadas de la respuesta. |
 | Repository | `Repositories/IReservaRepository.cs` / `ReservaRepository.cs` | Consultas EF Core de reservas, y búsqueda/alta de pasajero por DNI. |
@@ -35,13 +35,21 @@ Actualizado el 16/11/2026 al integrar el módulo con Vuelos, Auth y el frontend.
 {
   "vueloId": 1,
   "asientoId": 101,
-  "pasajero": { "nombre": "Ana", "apellido": "Pérez", "documento": "30123456" }
+  "pasajero": {
+    "nombre": "Ana",
+    "apellido": "Pérez",
+    "documento": "30123456",
+    "email": "ana@mail.com",
+    "telefono": "3415555555"
+  }
 }
 ```
 
+`email` y `telefono` son opcionales y se guardan solo si el pasajero es nuevo. Es el formato que usa la pantalla de reserva (`ReservarPage`): así se puede volver a reservar para alguien que ya viajó, porque el backend lo reutiliza por documento.
+
 El `usuarioId` **no** viaja: se toma del claim `Id` del token (o `NameIdentifier` como respaldo).
 
-También se acepta un pasajero ya existente por id (es lo que usa el flujo de Tomás: primero `POST /api/pasajeros` y después la reserva):
+También se acepta un pasajero ya existente por id (lo usa el Administrador con "Pasajero existente", que lista `GET /api/pasajeros`):
 
 ```json
 { "vueloId": 1, "asientoId": 101, "pasajeroId": 5 }

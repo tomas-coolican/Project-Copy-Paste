@@ -25,10 +25,6 @@ function Ruta({ vuelo }) {
 function Acciones({ reserva, cancelando, cancelada, onCancel, paseAbierto, onTogglePase }) {
   return (
     <div className="flex flex-wrap items-center gap-x-5 gap-y-2 tbl:justify-end">
-      <TextLink as={Link} to={`/dashboard/vuelos/${reserva.vueloId}`} size="sm">
-        Ver detalle
-      </TextLink>
-
       <button
         type="button"
         onClick={onTogglePase}

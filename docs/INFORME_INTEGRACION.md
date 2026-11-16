@@ -85,11 +85,11 @@ Detalle completo en [`VuelosApi/RESERVAS_CAMBIOS.md`](../VuelosApi/RESERVAS_CAMB
 
 ### Flujo de una reserva de punta a punta
 
-1. El usuario abre `/dashboard/vuelos/:id` → `GET /api/vuelos/{id}` trae los asientos con `disponible`.
-2. Elige un asiento libre y completa nombre, apellido y documento (validados en el navegador con las mismas reglas que el DTO).
-3. `POST /api/reservas` con el token → `ReservasController` toma el usuario del token → `ReservaService` aplica las reglas → `ReservaRepository` guarda.
-4. 201: se muestra "Reserva confirmada" y se recarga el vuelo (el asiento pasa a ocupado). 409: se muestra el `detail` y se recarga la disponibilidad. 400: el error aparece junto al campo.
-5. En `/dashboard/reservas` la reserva aparece como Confirmada y se puede cancelar (`DELETE` → 204).
+1. El usuario abre `/dashboard/vuelos/:id` → **Reservar un asiento** → `/dashboard/vuelos/:id/reservar`. `GET /api/vuelos/{id}` trae los asientos con `disponible`.
+2. **Asiento:** elige uno libre en el mapa. **Pasajero:** completa nombre, apellido, DNI, email y teléfono (opcional). El Administrador también puede elegir un pasajero existente.
+3. **Resumen → Confirmar:** un solo `POST /api/reservas` con el token y el pasajero anidado (o `pasajeroId` si se eligió uno existente) → `ReservasController` toma el usuario del token → `ReservaService` busca el pasajero por DNI (o lo crea) y aplica las reglas → `ReservaRepository` guarda.
+4. 201: **comprobante** con el precio calculado por el servidor. 409: si el asiento se ocupó, vuelve al mapa; si no, muestra el `detail`. 400: vuelve al formulario con el error junto al campo.
+5. En `/dashboard/reservas` la reserva aparece como Confirmada, tiene **Ver pase** y se puede cancelar (`DELETE` → 204).
 
 ## 4. Cómo ejecutar
 
@@ -154,3 +154,30 @@ Se revisó el sistema completo. Los errores se confirmaron contra la API antes d
 | **Más vuelos de prueba** | 15 vuelos entre ciudades argentinas (Córdoba, Mendoza, Bariloche, Salta, Ushuaia, Iguazú, Mar del Plata, Neuquén, Tucumán, Trelew…), con fechas de 1 a 30 días **desde el día en que se cargan**, distintas capacidades, precios y asientos ejecutivos, y uno Cancelado. Se cargan si `DatosDePrueba:Cargar` es `true` (opción que agregó Agustín) y el seed es idempotente: agrega solo los códigos que faltan | `Config/DatosDePrueba.cs`, `Program.cs` |
 | **Estado automático del vuelo** | Un vuelo Programado se muestra "En vuelo" entre la salida y la llegada, y "Finalizado" después. Se calcula al responder, no se escribe en la base | `Services/VueloService.cs` |
 | **Pase de abordar** | En Mis reservas cada reserva tiene "Ver pase" (pasajero, documento, categoría, precio, vuelo, asiento, salida). Reutiliza el `BoardingPass` de la landing. Al reservar, el comprobante es el `ComprobanteReserva` de Tomás | `components/PaseReserva.jsx` (nuevo), `ReservaRow.jsx`, `api/adapters.js` |
+
+## 7. Integración con `develop` y problemas corregidos
+
+`develop` ya traía el frontend de Tomás (reserva en pasos, `/admin`, `/admin/reservas`, landing nueva) y la opción `DatosDePrueba:Cargar` de Agustín. Al integrarlo con esta rama:
+
+**Conflictos resueltos**
+
+| Archivo | Resultado |
+|---|---|
+| `VuelosApi/Program.cs` | Middleware de errores, seed del admin que no tira la API y registro de servicios de esta rama + la condición `DatosDePrueba:Cargar` de Agustín |
+| `VuelosApi/Config/DatosDePrueba.cs` | Los 15 vuelos idempotentes de esta rama, condicionados por `DatosDePrueba:Cargar` |
+| `VuelosApi/README.md` | Versión de Agustín, con el ejemplo de reserva y las reglas actualizadas |
+| `frontend/src/api/reservasApi.js` | Una sola función `crear` para `pasajeroId` o pasajero anidado |
+| `frontend/src/api/adapters.js` | Se eliminó una función `adaptAsiento` duplicada que impedía compilar |
+| `AdminHomePage.jsx`, `VueloDetallePage.jsx` | Quedan las versiones de Tomás; las pantallas propias de esta rama se descartaron |
+
+**Problemas que ya estaban en `develop` y se corrigieron**
+
+| Problema | Corrección | Archivos |
+|---|---|---|
+| **No se podía reservar para un pasajero ya registrado.** "Pasajero nuevo" con un DNI existente daba 409 en `POST /api/pasajeros`, y "Pasajero existente" daba 403 a un Usuario (la lista es solo para Administrador) | La reserva se crea en un solo pedido con el pasajero anidado: el backend lo busca por DNI y lo reutiliza o lo crea. "Pasajero existente" se muestra solo al Administrador. Se suman `email` y `telefono` opcionales al pasajero de la reserva para no perder esos datos | `pages/ReservarPage.jsx`, `api/reservasApi.js`, `Dtos/Reserva/PasajeroReservaDTO.cs`, `Services/ReservaService.cs` |
+| Al pasar del asiento al paso del pasajero, el formulario aparecía con errores de "campo obligatorio" sin haber escrito nada (el mismo `<button>` se reutilizaba y el clic enviaba el formulario) | `key` distinta para el botón de cada paso | `pages/ReservarPage.jsx` |
+| **La landing mostraba vuelos y cifras inventados** (`sampleFlights.js`, "Datos de ejemplo"), contra el requisito "sin mocks" | Pase, cifras, tablero de salidas/llegadas y ficha salen de `GET /api/vuelos`, con estados de carga y error. Se eliminó `sampleFlights.js` | `pages/LandingPage.jsx`, `landing/StatsBand.jsx`, `landing/DeparturesBoard.jsx`, `landing/TicketSection.jsx`, `landing/Hero.jsx`, `FlightTicket.jsx` |
+| `pnpm lint` fallaba con 5 errores (variables e imports sin usar) | Se quitaron | `FlightTicket.jsx`, `layouts/AuthLayout.jsx` |
+| `frontend/README.md` indicaba comandos de npm | Pasan a pnpm | `frontend/README.md` |
+
+**Verificación después de integrar:** `dotnet build` sin warnings, `pnpm lint` sin errores, `pnpm build` OK. Contra Supabase: 25/25 casos de reservas y vuelos, 10/10 de compatibilidad de formatos, 6/6 de reserva repetida para el mismo DNI. En el navegador: landing con datos reales, reserva en pasos como Usuario (incluido un pasajero ya registrado), "Pasajero existente" como Administrador, Ver pase y cancelación.

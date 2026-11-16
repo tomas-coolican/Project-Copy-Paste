@@ -1,6 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import pasajerosApi from '../api/pasajerosApi.js';
 import reservasApi from '../api/reservasApi.js';
 import vuelosApi from '../api/vuelosApi.js';
 import Alert from '../components/Alert.jsx';
@@ -25,7 +24,19 @@ import { esReservable } from '../utils/vuelos.js';
 const SHELL = 'mx-auto w-[min(100%-(var(--spacing-gutter)*2),var(--container-shell))]';
 // Secuencia: asiento → pasajero → resumen → (confirmar) → comprobante.
 const PASOS = { asiento: 0, pasajero: 1, resumen: 2, comprobante: 3 };
-const CAMPOS_PASAJERO = ['nombre', 'apellido', 'dni', 'email', 'telefono'];
+
+// Errores 400 del pasajero que viaja dentro de la reserva ("pasajero.Documento") → campos del formulario.
+const CAMPO_FORMULARIO = { nombre: 'nombre', apellido: 'apellido', documento: 'dni', email: 'email', telefono: 'telefono' };
+
+function erroresDelPasajero(fieldErrors = {}) {
+  const resultado = {};
+  for (const [clave, mensajes] of Object.entries(fieldErrors)) {
+    const [raiz, propiedad] = clave.split('.');
+    const campo = raiz?.toLowerCase() === 'pasajero' ? CAMPO_FORMULARIO[propiedad?.toLowerCase()] : null;
+    if (campo) resultado[campo] = mensajes[0];
+  }
+  return resultado;
+}
 
 function VolverAlVuelo({ id }) {
   return (
@@ -58,7 +69,9 @@ function Leyenda({ id }) {
 }
 
 function Reservar({ id }) {
-  const { user } = useAuth();
+  // "Pasajero existente" usa GET /pasajeros, que es solo para Administrador: al resto no se le muestra.
+  // Un usuario común siempre carga los datos; si el DNI ya existe, el backend reutiliza ese pasajero.
+  const { user, isAdmin } = useAuth();
   const ayudaId = useId();
   const encabezado = useRef(null);
   const enviando = useRef(false);
@@ -107,7 +120,12 @@ function Reservar({ id }) {
     setErroresCampo(null);
   }
 
-  /** Crea el pasajero (si es nuevo) y la reserva. Solo se llama desde el resumen. */
+  /**
+   * Crea la reserva en un solo pedido. Solo se llama desde el resumen.
+   * - Pasajero existente (Administrador): se manda su `pasajeroId`.
+   * - Pasajero cargado: viaja dentro de la reserva; el backend lo busca por DNI y, si no existe, lo crea.
+   *   Así se puede volver a reservar para alguien que ya viajó (antes POST /pasajeros respondía 409).
+   */
   async function confirmar() {
     if (enviando.current || !vuelo || !asiento || (!pasajero && !datosNuevo)) return;
 
@@ -116,35 +134,41 @@ function Reservar({ id }) {
     setErrorAccion(null);
     setErroresCampo(null);
 
-    let elegido = pasajero;
-    let etapa = 'pasajero';
-
     try {
-      if (!elegido) {
-        elegido = await pasajerosApi.crear(datosNuevo);
-        // Si la reserva falla después, el pasajero ya existe: se reutiliza en el reintento.
-        setPasajero(elegido);
-        setModo('existente');
-      }
-
-      etapa = 'reserva';
-      const creada = await reservasApi.crear({ pasajeroId: elegido.id, vueloId: vuelo.id, asientoId: asiento.id });
+      const creada = await reservasApi.crear(
+        pasajero
+          ? { pasajeroId: pasajero.id, vueloId: vuelo.id, asientoId: asiento.id }
+          : {
+              vueloId: vuelo.id,
+              asientoId: asiento.id,
+              pasajero: {
+                nombre: datosNuevo.nombre,
+                apellido: datosNuevo.apellido,
+                documento: datosNuevo.dni,
+                email: datosNuevo.email,
+                telefono: datosNuevo.telefono,
+              },
+            },
+      );
       setReserva(creada);
       setPaso('comprobante');
     } catch (fallo) {
-      await manejarFallo(fallo, etapa);
+      await manejarFallo(fallo);
     } finally {
       enviando.current = false;
       setPendiente(false);
     }
   }
 
-  async function manejarFallo(fallo, etapa) {
+  async function manejarFallo(fallo) {
     // 401: la sesión venció. El cliente ya cerró la sesión y redirige al login con el destino guardado.
     if (fallo.status === 401) return;
 
-    if (etapa === 'pasajero') {
-      manejarFalloPasajero(fallo);
+    // 400 con errores de los datos del pasajero: se vuelve al formulario con los valores cargados.
+    const deCampo = erroresDelPasajero(fallo.fieldErrors);
+    if (fallo.status === 400 && Object.keys(deCampo).length > 0) {
+      setErroresCampo(deCampo);
+      setPaso('pasajero');
       return;
     }
 
@@ -172,22 +196,6 @@ function Reservar({ id }) {
     setErrorAccion(fallo);
   }
 
-  function manejarFalloPasajero(fallo) {
-    const porCampo = CAMPOS_PASAJERO.filter((campo) => fallo.fieldErrors?.[campo]);
-
-    if (porCampo.length > 0) {
-      setErroresCampo(Object.fromEntries(porCampo.map((campo) => [campo, fallo.fieldErrors[campo][0]])));
-    } else if (fallo.status === 409) {
-      setErroresCampo({ dni: 'Ya existe un pasajero con ese DNI. Buscalo en "Pasajero existente".' });
-    } else {
-      setErrorAccion(fallo);
-      return;
-    }
-
-    // El alta falló por datos del pasajero: se vuelve al formulario con los valores cargados.
-    setPaso('pasajero');
-  }
-
   function continuarConNuevo(datos) {
     setDatosNuevo(datos);
     setPasajero(null);
@@ -208,7 +216,9 @@ function Reservar({ id }) {
   };
   const leads = {
     asiento: 'Elegí un asiento libre del mapa. Después cargás o elegís al pasajero.',
-    pasajero: 'El pasajero es quien viaja. Podés cargar uno nuevo o reutilizar uno existente.',
+    pasajero: isAdmin
+      ? 'El pasajero es quien viaja. Podés cargar uno nuevo o reutilizar uno existente.'
+      : 'Cargá los datos de quien viaja. Si ya viajó antes, usá el mismo DNI y se reutilizan sus datos.',
     resumen: 'Controlá los datos. Al confirmar se crea la reserva y el asiento queda bloqueado.',
     comprobante: 'Guardá el comprobante: el asiento ya está bloqueado a nombre del pasajero.',
   };
@@ -263,7 +273,9 @@ function Reservar({ id }) {
 
     if (paso === 'asiento') {
       accion = (
-        <Button disabled={!asiento} icon="arrow" onClick={() => irA(pasajeroListo ? 'resumen' : 'pasajero')}>
+        // `key` distinta por paso: si React reutilizara el mismo <button>, el clic de "Continuar"
+        // terminaría enviando el formulario del pasajero (vacío) apenas se cambia de paso.
+        <Button key="continuar" disabled={!asiento} icon="arrow" onClick={() => irA(pasajeroListo ? 'resumen' : 'pasajero')}>
           {pasajeroListo ? 'Volver al resumen' : 'Continuar con el pasajero'}
         </Button>
       );
@@ -301,11 +313,11 @@ function Reservar({ id }) {
     } else if (paso === 'pasajero') {
       accion =
         modo === 'nuevo' ? (
-          <Button type="submit" form="pasajero-form" icon="arrow">
+          <Button key="revisar-nuevo" type="submit" form="pasajero-form" icon="arrow">
             Revisar reserva
           </Button>
         ) : (
-          <Button disabled={!pasajero} icon="arrow" onClick={continuarConExistente}>
+          <Button key="revisar-existente" disabled={!pasajero} icon="arrow" onClick={continuarConExistente}>
             Revisar reserva
           </Button>
         );
@@ -314,24 +326,26 @@ function Reservar({ id }) {
         <div className="flex max-w-[640px] flex-col gap-6">
           {errorAccion && <ErrorMessage error={errorAccion} title="No pudimos guardar al pasajero" />}
 
-          <div role="group" aria-label="Tipo de pasajero" className="flex gap-6 border-b border-line">
-            {[
-              ['nuevo', 'Pasajero nuevo'],
-              ['existente', 'Pasajero existente'],
-            ].map(([valor, texto]) => (
-              <button
-                key={valor}
-                type="button"
-                aria-pressed={modo === valor}
-                onClick={() => elegirModo(valor)}
-                className={`min-h-(--size-touch) border-b-2 text-app-body-sm transition-colors duration-(--duration-state) ${modo === valor ? 'border-accent text-ink' : 'border-transparent text-ink-faint hover:text-ink'}`}
-              >
-                {texto}
-              </button>
-            ))}
-          </div>
+          {isAdmin && (
+            <div role="group" aria-label="Tipo de pasajero" className="flex gap-6 border-b border-line">
+              {[
+                ['nuevo', 'Pasajero nuevo'],
+                ['existente', 'Pasajero existente'],
+              ].map(([valor, texto]) => (
+                <button
+                  key={valor}
+                  type="button"
+                  aria-pressed={modo === valor}
+                  onClick={() => elegirModo(valor)}
+                  className={`min-h-(--size-touch) border-b-2 text-app-body-sm transition-colors duration-(--duration-state) ${modo === valor ? 'border-accent text-ink' : 'border-transparent text-ink-faint hover:text-ink'}`}
+                >
+                  {texto}
+                </button>
+              ))}
+            </div>
+          )}
 
-          {modo === 'nuevo' ? (
+          {modo === 'nuevo' || !isAdmin ? (
             <PasajeroForm defaultValues={datosNuevo ?? undefined} serverErrors={erroresCampo} onSubmit={continuarConNuevo} />
           ) : (
             <PasajeroSelector seleccionado={pasajero} onSelect={setPasajero} />
@@ -340,7 +354,7 @@ function Reservar({ id }) {
       );
     } else {
       accion = (
-        <Button icon="arrow" pending={pendiente} pendingLabel="Creando reserva…" onClick={confirmar}>
+        <Button key="confirmar" icon="arrow" pending={pendiente} pendingLabel="Creando reserva…" onClick={confirmar}>
           Confirmar reserva
         </Button>
       );

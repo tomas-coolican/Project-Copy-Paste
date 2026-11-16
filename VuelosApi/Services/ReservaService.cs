@@ -161,9 +161,10 @@ public class ReservaService : IReservaService
             Nombre = nombre,
             Apellido = apellido,
             DNI = documento,
-            // El contrato de reservas no pide email. La columna es obligatoria en la base,
-            // así que se guarda vacío (ver informe: pendiente migración para hacerla opcional).
-            Email = string.Empty
+            // El email es opcional en la reserva, pero la columna es obligatoria en la base:
+            // si no llega se guarda vacío (ver informe: pendiente migración para hacerla opcional).
+            Email = string.IsNullOrWhiteSpace(datos.Email) ? string.Empty : datos.Email.Trim(),
+            Telefono = string.IsNullOrWhiteSpace(datos.Telefono) ? null : datos.Telefono.Trim()
         };
 
         await _repositorio.AgregarPasajeroAsync(nuevo);

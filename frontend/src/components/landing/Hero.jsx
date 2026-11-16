@@ -31,7 +31,8 @@ function PaseDestacado({ vuelo }) {
 }
 
 /**
- * Portada de producto con un pase de ejemplo; el CTA conserva el acceso al registro y al tablero.
+ * Portada de producto con el pase de la próxima salida real (si hay); el CTA conserva el acceso
+ * al registro y al tablero.
  */
 export default function Hero({ destacado, isAuthenticated }) {
   return (

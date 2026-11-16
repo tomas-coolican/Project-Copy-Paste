@@ -66,9 +66,11 @@ El pasajero se indica de una de dos formas (exactamente una). Con sus datos: se 
 {
   "vueloId": 1,
   "asientoId": 1,
-  "pasajero": { "nombre": "Ana", "apellido": "Gomez", "documento": "30111222" }
+  "pasajero": { "nombre": "Ana", "apellido": "Gomez", "documento": "30111222", "email": "ana@mail.com" }
 }
 ```
+
+`email` y `telefono` son opcionales y se guardan solo si el pasajero es nuevo.
 
 O con un pasajero ya existente (por ejemplo, creado con `POST /api/pasajeros`):
 

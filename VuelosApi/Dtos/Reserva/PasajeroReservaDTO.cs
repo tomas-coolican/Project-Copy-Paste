@@ -18,4 +18,12 @@ public class PasajeroReservaDTO
     [RegularExpression(@"^\s*[A-Za-z0-9]{6,20}\s*$",
         ErrorMessage = "El documento debe tener entre 6 y 20 letras o números, sin puntos ni espacios.")]
     public string Documento { get; set; } = string.Empty;
+
+    // Opcionales: se guardan solo si el pasajero es nuevo (si ya existe, no se modifican sus datos).
+    [EmailAddress(ErrorMessage = "Revisá el formato del email.")]
+    [MaxLength(120, ErrorMessage = "El email admite hasta 120 caracteres.")]
+    public string? Email { get; set; }
+
+    [MaxLength(30, ErrorMessage = "El teléfono admite hasta 30 caracteres.")]
+    public string? Telefono { get; set; }
 }
