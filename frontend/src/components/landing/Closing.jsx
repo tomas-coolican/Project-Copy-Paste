@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import runway from '../../assets/landing/runway.jpg';
 import Button from '../Button.jsx';
 
-export default function Closing() {
+export default function Closing({ isAuthenticated }) {
   return (
     <section
       id="acceso"
@@ -27,16 +27,16 @@ export default function Closing() {
       <div className="relative z-10 mx-auto grid w-[min(100%-(var(--spacing-gutter)*2),var(--container-shell))] items-start gap-[30px] pb-8 pt-[72px] sm:pb-[clamp(32px,5vw,52px)] sm:pt-[clamp(64px,9vw,110px)] min-[941px]:grid-cols-[minmax(0,1.2fr)_auto] min-[941px]:items-end min-[941px]:gap-x-[clamp(36px,6vw,80px)] min-[941px]:gap-y-8">
         <div>
           <h2 id="cierre-titulo" className="m-0 max-w-[15ch] text-[clamp(2.5rem,10.5vw,3.4rem)] font-semibold leading-[0.96] tracking-[-0.04em] sm:text-[clamp(2.6rem,4.8vw,4.6rem)]">
-            La próxima salida empieza acá.
+            Tu próxima reserva empieza acá.
           </h2>
           <p className="m-0 mt-[18px] max-w-[40ch] text-[15.5px] leading-[1.6] text-surface-band">
-            Abrí el tablero y encontrá el próximo vuelo en segundos.
+            Consultá vuelos, elegí un asiento y gestioná tus reservas desde la plataforma.
           </p>
         </div>
 
         <div className="flex w-full flex-col items-stretch gap-4 min-[941px]:w-auto min-[941px]:items-end">
-          <Button as={Link} to="/dashboard" variant="primary-inverse" icon="arrow" className="min-w-49 max-sm:w-full">
-            Abrir tablero
+          <Button as={Link} to={isAuthenticated ? '/dashboard' : '/registro'} variant="primary-inverse" icon="arrow" className="min-w-49 max-sm:w-full">
+            {isAuthenticated ? 'Ir a mi tablero' : 'Crear cuenta'}
           </Button>
           <a
             href="#plataforma"

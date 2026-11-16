@@ -3,10 +3,10 @@ using VuelosApi.Models;
 
 namespace VuelosApi.Config;
 
-// Datos de prueba de vuelos con sus asientos, para que el frontend trabaje sin mocks.
-// Se cargan solo en Development. Es idempotente: agrega únicamente los vuelos cuyo código
-// todavía no existe, así que se puede ejecutar en cada arranque sin duplicar nada.
-// Las fechas son relativas al día en que se cargan, para que siempre haya vuelos a futuro.
+// Vuelos de ejemplo con sus asientos, para que el frontend trabaje sin mocks.
+// Se cargan solo si DatosDePrueba:Cargar es true (ver Program.cs). Es idempotente: agrega
+// únicamente los vuelos cuyo código todavía no existe, así que se puede ejecutar en cada
+// arranque sin duplicar nada. Las fechas son relativas al día en que se cargan.
 public static class DatosDePrueba
 {
     // (código, origen, destino, días desde hoy, hora local de salida, minutos de vuelo,

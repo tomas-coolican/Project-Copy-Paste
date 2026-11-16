@@ -1,12 +1,10 @@
-import { Link } from 'react-router-dom';
 import EmptyState from '../EmptyState.jsx';
 import FlightTicket from '../FlightTicket.jsx';
 import Loading from '../Loading.jsx';
 import TextLink from '../TextLink.jsx';
 
 /**
- * Vuelo destacado: la próxima salida programada. Sin conexión o sin vuelos no abre un error aparte:
- * muestra un aviso neutro, porque el error de la API ya se explica en el tablero.
+ * Ficha ilustrativa del prototipo con datos ficticios explícitos.
  */
 export default function TicketSection({ vuelo, loading }) {
   return (
@@ -24,13 +22,14 @@ export default function TicketSection({ vuelo, loading }) {
         {vuelo ? (
           <FlightTicket
             vuelo={vuelo}
+            showcase
             reveal
             aria-label={`Detalle del vuelo ${vuelo.numeroVuelo}`}
             footer={
               <>
-                <span className="font-mono">Próxima salida programada</span>
-                <TextLink as={Link} to="/dashboard" size="sm">
-                  Abrir tablero
+                <span className="font-mono">Ejemplo con datos ficticios</span>
+                <TextLink href="#tablero" size="sm">
+                  Ver tablero
                 </TextLink>
               </>
             }

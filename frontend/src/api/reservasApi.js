@@ -7,19 +7,20 @@ export async function listar() {
 }
 
 /**
- * Contrato 4.5: { vueloId, asientoId, pasajero: { nombre, apellido, documento } }.
- * El usuario no viaja en el body: el backend lo toma del token.
+ * El usuario sale del token. El pasajero se indica de una de dos formas (exactamente una):
+ * - `pasajeroId`: un pasajero ya existente → { pasajeroId, vueloId, asientoId }.
+ * - `pasajero`: { nombre, apellido, documento } → el backend lo busca por documento o lo crea.
  */
-export async function crear({ vueloId, asientoId, pasajero }) {
-  const { data } = await client.post('/reservas', {
-    vueloId,
-    asientoId,
-    pasajero: {
-      nombre: pasajero.nombre,
-      apellido: pasajero.apellido,
-      documento: pasajero.documento,
-    },
-  });
+export async function crear({ vueloId, asientoId, pasajeroId, pasajero }) {
+  const cuerpo = pasajero
+    ? {
+        vueloId,
+        asientoId,
+        pasajero: { nombre: pasajero.nombre, apellido: pasajero.apellido, documento: pasajero.documento },
+      }
+    : { vueloId, asientoId, pasajeroId };
+
+  const { data } = await client.post('/reservas', cuerpo);
   return adaptReserva(data);
 }
 

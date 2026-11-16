@@ -43,13 +43,14 @@
 
 | Archivo | Cambio |
 |---|---|
-| `api/reservasApi.js` | Nuevo `crear({ vueloId, asientoId, pasajero })`. |
-| `api/adapters.js` | `adaptVuelo` conserva los `asientos` del detalle (`id`, `numero`, `categoria`, `disponible`); `adaptReserva` lee el pasajero anidado. |
-| `components/ReservarAsiento.jsx` (nuevo) | Mapa de asientos por categoría (libre / elegido / ocupado), formulario de pasajero con React Hook Form, precio con recargo ejecutivo, mensajes de éxito y error. Usa `FormField`, `Button`, `Alert` y `ErrorMessage` existentes. |
-| `pages/VueloDetallePage.jsx` | Reemplaza el aviso "La selección de asientos todavía no está disponible" por `<ReservarAsiento>`. Nada más de la página cambió. |
-| `pages/AdminHomePage.jsx` | Era un marcador ("La administración se habilita en el próximo tramo"). Ahora es el **panel de administración de vuelos**: listado ordenado por salida, alta, edición y eliminación con confirmación. |
-| `components/VueloForm.jsx` (nuevo) | Formulario de alta/edición con React Hook Form y las mismas reglas que `VueloEntradaDTO`. Fechas en hora local → se envían en UTC. Alta: asientos ejecutivos opcionales. Edición: estado del vuelo. |
-| `components/ConfirmDialog.jsx` | Prop opcional `errorTitle` (antes el título del error decía siempre "No se pudo cancelar la reserva"). El valor por defecto es el de antes, así que Mis reservas no cambia. |
+> Al integrar con `develop` quedaron las pantallas de Tomás para la reserva (`ReservarPage`, `/dashboard/vuelos/:id/reservar`) y la administración (`AdminVuelosPage` en `/admin`, `AdminReservasPage` en `/admin/reservas`). Las versiones propias de esta rama (`ReservarAsiento`, `VueloForm` y el panel en `AdminHomePage`) se descartaron para no duplicar pantallas.
+
+| Archivo | Cambio |
+|---|---|
+| `api/reservasApi.js` | `crear` acepta las dos formas del backend: `{ vueloId, asientoId, pasajeroId }` (la que usa `ReservarPage`) o `{ vueloId, asientoId, pasajero }`. |
+| `api/adapters.js` | `adaptReserva` lee además el pasajero anidado (documento), el usuario que reservó y los datos del vuelo, que usa el pase de abordar. |
+| `components/PaseReserva.jsx` (nuevo) y `components/ReservaRow.jsx` | **"Ver pase"** en Mis reservas: muestra el pase de abordar de cada reserva (reutiliza `BoardingPass`). |
+| `components/ConfirmDialog.jsx` | Prop opcional `errorTitle` (antes el título del error decía siempre "No se pudo cancelar la reserva"). El valor por defecto es el de antes. |
 | `package-lock.json` (eliminado) / `pnpm-lock.yaml` | El grupo usa **pnpm**, no npm. Queda un solo lockfile (`pnpm-lock.yaml`). Comandos: `pnpm install`, `pnpm dev`, `pnpm lint`, `pnpm build`. También se actualizó la tabla de la sección 2.4 de `ACUERDOS_TECNICOS.md`. |
 
 ## 3. Cómo quedan los módulos
@@ -78,8 +79,8 @@ Detalle completo en [`VuelosApi/RESERVAS_CAMBIOS.md`](../VuelosApi/RESERVAS_CAMB
 ### 3.4 Frontend (Tomás)
 
 - `/` landing pública, `/login`, `/registro`.
-- Con sesión: `/dashboard`, `/dashboard/vuelos`, `/dashboard/vuelos/:id` (**ahora con reserva de asiento**), `/dashboard/reservas` (mis reservas y cancelación; el Administrador ve todas).
-- `/admin` (solo Administrador, pestaña "Administración"): **panel de vuelos**. "Nuevo vuelo" abre el formulario → `POST /api/vuelos`; "Editar" → `PUT /api/vuelos/{id}`; "Eliminar" pide confirmación → `DELETE /api/vuelos/{id}`. Los 409 del backend (código repetido, capacidad menor que las reservas, vuelo con reservas) se muestran con su `detail`; los 400 junto a cada campo.
+- Con sesión: `/dashboard`, `/dashboard/vuelos`, `/dashboard/vuelos/:id` (detalle con botón "Reservar un asiento"), `/dashboard/vuelos/:id/reservar` (reserva en pasos: asiento → pasajero → resumen → comprobante), `/dashboard/reservas` (mis reservas, "Ver pase" y cancelación; el Administrador ve todas).
+- `/admin` y `/admin/reservas` (solo Administrador): administración de vuelos (alta, edición, eliminación) y de reservas.
 - Axios con interceptor que agrega `Authorization: Bearer`, y ante un 401 cierra la sesión.
 
 ### Flujo de una reserva de punta a punta
@@ -140,8 +141,8 @@ Se revisó el sistema completo. Los errores se confirmaron contra la API antes d
 | # | Error | Corrección | Archivo |
 |---|---|---|---|
 | 1 | Se podía crear o editar un vuelo **sin fecha de salida o llegada**: se guardaba el año 0001 | Las fechas pasan a ser `DateTime?` con `[Required]` → 400 | `Dtos/Vuelo/VueloEntradaDTO.cs`, `Services/VueloService.cs` |
-| 2 | **Precio de 100.000.000 → error 500**: el DTO lo permitía pero la columna es `numeric(10,2)`; con el +50 % ejecutivo también desbordaba | Tope de 10.000.000 en el DTO y en el formulario → 400 | `VueloEntradaDTO.cs`, `frontend/src/components/VueloForm.jsx` |
-| 3 | Se podían **crear vuelos con salida en el pasado** | Al crear, la salida tiene que ser futura → 400 (al editar se permite, para corregir vuelos viejos) | `Dtos/Vuelo/CrearVueloDTO.cs`, `VueloForm.jsx` |
+| 2 | **Precio de 100.000.000 → error 500**: el DTO lo permitía pero la columna es `numeric(10,2)`; con el +50 % ejecutivo también desbordaba | Tope de 10.000.000 → 400 | `VueloEntradaDTO.cs` |
+| 3 | Se podían **crear vuelos con salida en el pasado** | Al crear, la salida tiene que ser futura → 400 (al editar se permite, para corregir vuelos viejos) | `Dtos/Vuelo/CrearVueloDTO.cs` |
 | 4 | **Cancelar un vuelo dejaba sus reservas Confirmadas** | Al pasar el vuelo a Cancelado se cancelan sus reservas confirmadas y se liberan los asientos | `Services/VueloService.cs` |
 | 5 | Se podía **cancelar la reserva de un vuelo que ya salió** | → 409 "No se puede cancelar la reserva de un vuelo que ya salió." | `Services/ReservaService.cs` |
 | 6 | **La API se caía al arrancar si la base no respondía** (el seed del admin estaba fuera del `try/catch`) | Se registra el error en el log y la API levanta igual; las peticiones devuelven 500 (ProblemDetails) hasta que vuelva la base | `Program.cs` |
@@ -150,7 +151,6 @@ Se revisó el sistema completo. Los errores se confirmaron contra la API antes d
 
 | Mejora | Qué hace | Archivos |
 |---|---|---|
-| **Más vuelos de prueba** | 15 vuelos entre ciudades argentinas (Córdoba, Mendoza, Bariloche, Salta, Ushuaia, Iguazú, Mar del Plata, Neuquén, Tucumán, Trelew…), con fechas de 1 a 30 días **desde el día en que se cargan**, distintas capacidades, precios y asientos ejecutivos, y uno Cancelado. El seed ahora es idempotente: agrega solo los códigos que faltan, así que se puede correr en cada arranque sin duplicar | `Config/DatosDePrueba.cs`, `Program.cs` |
+| **Más vuelos de prueba** | 15 vuelos entre ciudades argentinas (Córdoba, Mendoza, Bariloche, Salta, Ushuaia, Iguazú, Mar del Plata, Neuquén, Tucumán, Trelew…), con fechas de 1 a 30 días **desde el día en que se cargan**, distintas capacidades, precios y asientos ejecutivos, y uno Cancelado. Se cargan si `DatosDePrueba:Cargar` es `true` (opción que agregó Agustín) y el seed es idempotente: agrega solo los códigos que faltan | `Config/DatosDePrueba.cs`, `Program.cs` |
 | **Estado automático del vuelo** | Un vuelo Programado se muestra "En vuelo" entre la salida y la llegada, y "Finalizado" después. Se calcula al responder, no se escribe en la base | `Services/VueloService.cs` |
-| **Pase de abordar** | Al confirmar una reserva aparece el pase (pasajero, documento, categoría, precio, vuelo, asiento, salida). En Mis reservas cada reserva tiene "Ver pase". Reutiliza el `BoardingPass` de la landing | `components/PaseReserva.jsx` (nuevo), `ReservarAsiento.jsx`, `ReservaRow.jsx`, `api/adapters.js` |
-| **Pasajeros por vuelo** (panel de administración) | Botón "Pasajeros (n)" en cada vuelo: lista de asientos con pasajero, documento, qué usuario reservó y estado. Usa `GET /api/reservas` (al Administrador le devuelve todas); al guardar o eliminar se recargan vuelos y reservas | `pages/AdminHomePage.jsx` |
+| **Pase de abordar** | En Mis reservas cada reserva tiene "Ver pase" (pasajero, documento, categoría, precio, vuelo, asiento, salida). Reutiliza el `BoardingPass` de la landing. Al reservar, el comprobante es el `ComprobanteReserva` de Tomás | `components/PaseReserva.jsx` (nuevo), `ReservaRow.jsx`, `api/adapters.js` |

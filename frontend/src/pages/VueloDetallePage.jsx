@@ -7,7 +7,6 @@ import ErrorMessage from '../components/ErrorMessage.jsx';
 import FlightTicket from '../components/FlightTicket.jsx';
 import Loading from '../components/Loading.jsx';
 import PageHeader from '../components/PageHeader.jsx';
-import ReservarAsiento from '../components/ReservarAsiento.jsx';
 import useAsync from '../hooks/useAsync.js';
 import { esReservable } from '../utils/vuelos.js';
 import { formatFechaLarga } from '../utils/formatDate.js';
@@ -75,8 +74,19 @@ function VueloDetalle({ id }) {
                   ? `Estado actual: ${vuelo.estado}. Solo se pueden reservar vuelos programados.`
                   : 'La salida ya ocurrió. Elegí un vuelo futuro desde el listado.'}
               </Alert>
+            ) : vuelo.asientosDisponibles === 0 ? (
+              <Alert tone="info" title="No quedan asientos disponibles">
+                Todos los asientos de este vuelo están reservados.
+              </Alert>
             ) : (
-              <ReservarAsiento vuelo={vuelo} onCambio={reload} />
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+                <Button as={Link} to={`/dashboard/vuelos/${vuelo.id}/reservar`} icon="arrow">
+                  Reservar un asiento
+                </Button>
+                <span className="text-app-body-sm text-ink-muted">
+                  {vuelo.asientosDisponibles} {vuelo.asientosDisponibles === 1 ? 'asiento libre' : 'asientos libres'}
+                </span>
+              </div>
             )}
           </div>
         </>

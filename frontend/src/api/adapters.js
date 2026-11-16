@@ -50,18 +50,26 @@ export function adaptVuelo(dto) {
     precioBase: Number(dto.precio ?? dto.precioBase ?? 0),
     estado: getEnumLabel(ESTADO_VUELO, dto.estado),
     estadoCodigo: dto.estado,
-    // Solo viene en el detalle (GET /vuelos/{id}): el `id` es el que se envía al reservar.
-    asientos: Array.isArray(dto.asientos) ? dto.asientos.map(adaptAsiento) : [],
   };
 }
 
 export function adaptAsiento(dto) {
   return {
     id: dto.id,
-    numero: dto.numero,
+    numero: String(dto.numero ?? ''),
     categoria: getEnumLabel(CATEGORIA_ASIENTO, dto.categoria),
     categoriaCodigo: dto.categoria,
     disponible: Boolean(dto.disponible),
+    // La API todavía no informa el precio por asiento; si lo agrega, se usa tal cual (nunca se calcula acá).
+    precio: dto.precio === undefined || dto.precio === null ? null : Number(dto.precio),
+  };
+}
+
+/** GET /vuelos/{id}: el vuelo y la lista de asientos con su disponibilidad. */
+export function adaptVueloDetalle(dto) {
+  return {
+    vuelo: adaptVuelo(dto),
+    asientos: (dto.asientos ?? []).map(adaptAsiento),
   };
 }
 
@@ -77,8 +85,7 @@ export function adaptReserva(dto) {
       dto.nombrePasajero ?? `${dto.pasajero?.nombre ?? ''} ${dto.pasajero?.apellido ?? ''}`.trim(),
     documentoPasajero: dto.pasajero?.documento ?? '',
     usuarioNombre: dto.usuarioNombre ?? '',
-    categoriaAsiento: getEnumLabel(CATEGORIA_ASIENTO, dto.asiento?.categoria, ''),
-    // Datos del vuelo que ya trae la reserva (para el pase y la lista de pasajeros).
+    // Datos del vuelo que ya trae la reserva (para el pase de abordar).
     vueloResumen: dto.vuelo
       ? {
           origen: dto.vuelo.origen,
@@ -91,6 +98,10 @@ export function adaptReserva(dto) {
     numeroVuelo: dto.vuelo?.codigo ?? dto.numeroVuelo ?? '',
     asientoId: dto.asiento?.id ?? dto.asientoId,
     numeroAsiento: dto.asiento?.numero ?? dto.numeroAsiento ?? '',
+    categoriaAsiento: getEnumLabel(CATEGORIA_ASIENTO, dto.asiento?.categoria, ''),
+    origen: dto.vuelo?.origen ?? '',
+    destino: dto.vuelo?.destino ?? '',
+    fechaSalida: parseApiDate(dto.vuelo?.fechaSalida),
   };
 }
 
