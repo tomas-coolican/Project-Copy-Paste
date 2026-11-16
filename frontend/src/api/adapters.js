@@ -62,3 +62,16 @@ export function adaptPasajero(dto) {
     nombreCompleto: `${nombre} ${apellido}`.trim(),
   };
 }
+
+export function adaptSesion(dto) {
+  return {
+    token: dto.token,
+    expiraEn: parseApiDate(dto.expiraEn),
+    usuario: {
+      id: dto.usuario.id,
+      nombre: dto.usuario.nombre,
+      email: dto.usuario.email,
+      rol: dto.usuario.rol,
+    },
+  };
+}

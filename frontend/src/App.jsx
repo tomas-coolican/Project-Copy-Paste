@@ -1,10 +1,55 @@
+import { BrowserRouter, Link, Route, Routes } from 'react-router-dom';
+import Button from './components/Button.jsx';
+import { AuthProvider } from './context/AuthContext.jsx';
+import useAuth from './hooks/useAuth.js';
+import AuthLayout from './layouts/AuthLayout.jsx';
+import PublicLayout from './layouts/PublicLayout.jsx';
+import LandingPage from './pages/LandingPage.jsx';
+import LoginPage from './pages/LoginPage.jsx';
+import RegistroPage from './pages/RegistroPage.jsx';
+import AdminRoute from './routes/AdminRoute.jsx';
+import ProtectedRoute from './routes/ProtectedRoute.jsx';
+
+// Provisorio: el dashboard (S4) reemplaza esta vista.
+function TableroProvisorio() {
+  const { user, logout } = useAuth();
+
+  return (
+    <section className="mx-auto w-[min(100%-(var(--spacing-gutter)*2),var(--container-shell))] py-16">
+      <h1 className="m-0 text-app-page font-bold">Hola, {user.nombre}</h1>
+      <p className="m-0 mt-2 text-ink-muted">Rol: {user.rol}. El dashboard llega en el tramo S4.</p>
+      <div className="mt-6 flex gap-3">
+        <Button variant="secondary" size="sm" onClick={logout}>
+          Cerrar sesión
+        </Button>
+        <Button as={Link} to="/admin" variant="secondary" size="sm">
+          Probar ruta de administración
+        </Button>
+      </div>
+    </section>
+  );
+}
+
 export default function App() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-100">
-      <div className="text-center">
-        <h1 className="text-3xl font-semibold">Gestión de Vuelos</h1>
-        <p className="mt-2 text-slate-400">Frontend en construcción.</p>
-      </div>
-    </main>
+    <BrowserRouter>
+      <AuthProvider>
+        <Routes>
+          <Route element={<PublicLayout />}>
+            <Route index element={<LandingPage />} />
+            <Route element={<ProtectedRoute />}>
+              <Route path="dashboard" element={<TableroProvisorio />} />
+              <Route element={<AdminRoute />}>
+                <Route path="admin" element={<TableroProvisorio />} />
+              </Route>
+            </Route>
+          </Route>
+          <Route element={<AuthLayout />}>
+            <Route path="login" element={<LoginPage />} />
+            <Route path="registro" element={<RegistroPage />} />
+          </Route>
+        </Routes>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
