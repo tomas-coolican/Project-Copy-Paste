@@ -35,25 +35,29 @@ Al ejecutar el proyecto, abrir la dirección HTTPS que informa la consola y agre
 ## Endpoints principales
 
 ### Vuelos
-- `GET /api/vuelos` - listar vuelos.
-- `GET /api/vuelos/{id}` - obtener un vuelo.
-- `POST /api/vuelos` - crear vuelo y generar sus asientos.
-- `PUT /api/vuelos/{id}` - modificar datos y estado.
-- `DELETE /api/vuelos/{id}` - eliminar solo si no tiene reservas asociadas (incluidas las canceladas, para conservar el historial).
+- `GET /api/vuelos` - listar vuelos (incluye `asientosTotales` y `asientosDisponibles`). Público.
+- `GET /api/vuelos/{id}` - detalle del vuelo con la lista de asientos y su disponibilidad. Público.
+- `POST /api/vuelos` - crear vuelo y generar sus asientos. Solo `Administrador`.
+- `PUT /api/vuelos/{id}` - modificar el vuelo (mismo cuerpo que el POST; `cantidadAsientos` aplica la regla de capacidad). Solo `Administrador`.
+- `DELETE /api/vuelos/{id}` - eliminar solo si no tiene reservas asociadas (incluidas las canceladas, para conservar el historial). Responde `204`. Solo `Administrador`.
 
-Ejemplo para crear vuelo:
+Ejemplo para crear o editar un vuelo:
 ```json
 {
-  "numeroVuelo": "AR100",
+  "codigo": "AR100",
   "origen": "Buenos Aires",
   "destino": "Cordoba",
-  "fechaSalida": "2027-03-10T08:00:00",
-  "fechaLlegada": "2027-03-10T09:30:00",
-  "capacidad": 30,
-  "precioBase": 85000,
-  "cantidadAsientosEjecutivos": 5
+  "fechaSalida": "2027-03-10T08:00:00Z",
+  "fechaLlegada": "2027-03-10T09:30:00Z",
+  "precio": 85000,
+  "cantidadAsientos": 30
 }
 ```
+Opcionales: `cantidadAsientosEjecutivos` (solo POST) y `estado` (solo PUT, valor numérico del enum).
+
+Reglas de capacidad en el `PUT`: al subir se agregan asientos continuando la numeración; al bajar se quitan los últimos, y si alguno tiene reservas o hay más reservas activas que la nueva capacidad, responde `409`.
+
+Los errores `404` y `409` se devuelven en formato ProblemDetails (`title` y `detail`); los `400` de validación traen `errors` por campo.
 
 ### Pasajeros
 - `GET /api/pasajeros`

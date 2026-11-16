@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using VuelosApi.Models;
 
 namespace VuelosApi.Config;
@@ -14,6 +15,13 @@ public class AppDbContext : DbContext
     public DbSet<Asiento> Asientos => Set<Asiento>();
     public DbSet<Reserva> Reservas => Set<Reserva>();
     public DbSet<Usuario> Usuarios => Set<Usuario>();
+
+    // Todas las fechas se escriben y se leen como UTC (así la API las serializa siempre con "Z").
+    // PostgreSQL (timestamptz) rechaza fechas con Kind Local o Unspecified; esto las normaliza.
+    protected override void ConfigureConventions(ModelConfigurationBuilder configuracion)
+    {
+        configuracion.Properties<DateTime>().HaveConversion<FechaUtcConverter>();
+    }
 
     protected override void OnModelCreating(ModelBuilder modelo)
     {
@@ -63,5 +71,18 @@ public class AppDbContext : DbContext
 
         modelo.Entity<Vuelo>().Property(v => v.PrecioBase).HasPrecision(10, 2);
         modelo.Entity<Reserva>().Property(r => r.PrecioPagado).HasPrecision(10, 2);
+    }
+}
+
+public class FechaUtcConverter : ValueConverter<DateTime, DateTime>
+{
+    public FechaUtcConverter() : base(
+        // Al guardar: se normaliza a UTC.
+        fecha => fecha.Kind == DateTimeKind.Local
+            ? fecha.ToUniversalTime()
+            : DateTime.SpecifyKind(fecha, DateTimeKind.Utc),
+        // Al leer: se marca como UTC.
+        fecha => DateTime.SpecifyKind(fecha, DateTimeKind.Utc))
+    {
     }
 }

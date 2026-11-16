@@ -133,10 +133,20 @@ public class ReservaService : IReservaService
             NombrePasajero = reserva.Pasajero == null
                 ? string.Empty
                 : reserva.Pasajero.Nombre + " " + reserva.Pasajero.Apellido,
-            VueloId = reserva.VueloId,
-            NumeroVuelo = reserva.Vuelo?.NumeroVuelo ?? string.Empty,
-            AsientoId = reserva.AsientoId,
-            NumeroAsiento = reserva.Asiento?.Numero ?? string.Empty
+            Vuelo = new ReservaVueloDTO
+            {
+                Id = reserva.VueloId,
+                Codigo = reserva.Vuelo?.NumeroVuelo ?? string.Empty,
+                Origen = reserva.Vuelo?.Origen ?? string.Empty,
+                Destino = reserva.Vuelo?.Destino ?? string.Empty,
+                FechaSalida = reserva.Vuelo?.FechaSalida ?? default
+            },
+            Asiento = new ReservaAsientoDTO
+            {
+                Id = reserva.AsientoId,
+                Numero = reserva.Asiento?.Numero ?? string.Empty,
+                Categoria = reserva.Asiento?.Categoria ?? default
+            }
         };
     }
 }
