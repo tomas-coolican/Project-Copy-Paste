@@ -120,11 +120,12 @@ app.UseCors("FrontendPolicy");
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
+
 app.MapControllers();
 
-// Chequeo de salud para el hosting (Render): responde sin tocar la base.
-// También sirve para "despertar" el servicio gratuito antes de la demo.
-app.MapGet("/api/salud", () => Results.Ok(new { estado = "ok" }));
+// Health Check para Render. No requiere conexión con la base de datos.
+app.MapGet("/health", () => Results.Ok(new { status = "Healthy" }));
+
 
 // El seed es opcional: solo crea el administrador si se configuraron AdminSeed:Email y AdminSeed:Password.
 // La base debe tener aplicada previamente la migración.
