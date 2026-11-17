@@ -1,3 +1,4 @@
+using VuelosApi.Dtos;
 using VuelosApi.Dtos.Vuelo;
 using VuelosApi.Enums;
 using VuelosApi.Exceptions;
@@ -15,10 +16,14 @@ public class VueloService : IVueloService
         _repositorio = repositorio;
     }
 
-    public async Task<List<VueloDTO>> ObtenerTodosAsync()
+    public async Task<ResultadoPaginado<VueloDTO>> ObtenerTodosAsync(ParametrosPaginacion paginacion)
     {
-        var vuelos = await _repositorio.ObtenerTodosAsync();
-        return vuelos.Select(ConvertirADTO).ToList();
+        var vuelos = paginacion.Activa
+            ? await _repositorio.ObtenerTodosAsync(paginacion.Saltar, paginacion.Tomar)
+            : await _repositorio.ObtenerTodosAsync();
+
+        int total = paginacion.Activa ? await _repositorio.ContarAsync() : vuelos.Count;
+        return new ResultadoPaginado<VueloDTO>(vuelos.Select(ConvertirADTO).ToList(), total);
     }
 
     public async Task<VueloDetalleDTO?> ObtenerPorIdAsync(int id)

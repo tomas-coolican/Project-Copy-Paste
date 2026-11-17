@@ -14,14 +14,25 @@ public class VueloRepository : IVueloRepository
         _context = context;
     }
 
-    public async Task<List<Vuelo>> ObtenerTodosAsync()
+    public async Task<List<Vuelo>> ObtenerTodosAsync(int? saltar = null, int? tomar = null)
     {
-        return await _context.Vuelos
+        IQueryable<Vuelo> consulta = _context.Vuelos
             .Include(v => v.Asientos)
                 .ThenInclude(a => a.Reservas)
             .AsNoTracking()
+            .AsSplitQuery()                       // evita multiplicar filas al incluir colecciones
             .OrderBy(v => v.FechaSalida)
-            .ToListAsync();
+            .ThenBy(v => v.Id);                   // orden estable para que las páginas no se mezclen
+
+        if (saltar.HasValue) consulta = consulta.Skip(saltar.Value);
+        if (tomar.HasValue) consulta = consulta.Take(tomar.Value);
+
+        return await consulta.ToListAsync();
+    }
+
+    public async Task<int> ContarAsync()
+    {
+        return await _context.Vuelos.CountAsync();
     }
 
     public async Task<Vuelo?> ObtenerPorIdAsync(int id)

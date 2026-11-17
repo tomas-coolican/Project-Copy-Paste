@@ -97,7 +97,8 @@ builder.Services.AddCors(opciones =>
     {
         politica.WithOrigins(origenesPermitidos)
             .AllowAnyHeader()
-            .AllowAnyMethod();
+            .AllowAnyMethod()
+            .WithExposedHeaders("X-Total-Count"); // el frontend lee el total de los listados paginados
     });
 });
 

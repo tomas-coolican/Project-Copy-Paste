@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using VuelosApi.Dtos;
 using VuelosApi.Dtos.Vuelo;
 using VuelosApi.Exceptions;
 using VuelosApi.Services;
@@ -18,12 +19,16 @@ public class VuelosController : ControllerBase
         _servicio = servicio;
     }
 
-    // Público (D4 propuesto).
+    // Público (D4 propuesto). Paginación opcional: ?pagina=1&tamanio=10.
+    // El cuerpo sigue siendo una lista y el total va en el header X-Total-Count.
     [HttpGet]
     [ProducesResponseType(typeof(List<VueloDTO>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> ObtenerTodos()
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ObtenerTodos([FromQuery] ParametrosPaginacion paginacion)
     {
-        return Ok(await _servicio.ObtenerTodosAsync());
+        var resultado = await _servicio.ObtenerTodosAsync(paginacion);
+        Response.Headers["X-Total-Count"] = resultado.Total.ToString();
+        return Ok(resultado.Items);
     }
 
     // Público (D4 propuesto).

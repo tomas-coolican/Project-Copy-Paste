@@ -40,6 +40,8 @@ Aplicación web (React 19 + Vite + Tailwind 4, JavaScript) del sistema de gesti�
 | `pnpm dev` | Servidor de desarrollo |
 | `pnpm lint` | ESLint |
 | `pnpm build` | Build de producción en `dist/` |
+| `pnpm test` | Tests con Vitest + Testing Library (`src/**/*.test.js(x)`) |
+| `pnpm test:watch` | Tests en modo watch |
 | `pnpm preview` | Sirve el build local |
 
 ## Estructura
