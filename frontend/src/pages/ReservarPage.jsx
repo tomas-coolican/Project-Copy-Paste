@@ -1,6 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import pasajerosApi from "../api/pasajerosApi.js";
 import reservasApi from "../api/reservasApi.js";
 import vuelosApi from "../api/vuelosApi.js";
 import Alert from "../components/Alert.jsx";
@@ -71,7 +70,7 @@ function Leyenda({ id }) {
 }
 
 function Reservar({ id }) {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const ayudaId = useId();
   const encabezado = useRef(null);
   const enviando = useRef(false);
@@ -135,41 +134,41 @@ function Reservar({ id }) {
     setErrorAccion(null);
     setErroresCampo(null);
 
-    let elegido = pasajero;
-    let etapa = "pasajero";
-
+    // Pasajero existente (solo Administrador): se reserva por pasajeroId.
+    // Pasajero nuevo: los datos viajan dentro de la reserva y el backend lo busca por documento
+    // o lo crea. POST /pasajeros es solo para Administrador, así que no se usa acá.
     try {
-      if (!elegido) {
-        elegido = await pasajerosApi.crear(datosNuevo);
-        // Si la reserva falla después, el pasajero ya existe: se reutiliza en el reintento.
-        setPasajero(elegido);
-        setModo("existente");
-      }
-
-      etapa = "reserva";
       const creada = await reservasApi.crear({
-        pasajeroId: elegido.id,
         vueloId: vuelo.id,
         asientoId: asiento.id,
+        ...(pasajero
+          ? { pasajeroId: pasajero.id }
+          : {
+              pasajero: {
+                nombre: datosNuevo.nombre,
+                apellido: datosNuevo.apellido,
+                documento: datosNuevo.dni,
+                email: datosNuevo.email,
+                telefono: datosNuevo.telefono,
+              },
+            }),
       });
       setReserva(creada);
       setPaso("comprobante");
     } catch (fallo) {
-      await manejarFallo(fallo, etapa);
+      await manejarFallo(fallo);
     } finally {
       enviando.current = false;
       setPendiente(false);
     }
   }
 
-  async function manejarFallo(fallo, etapa) {
+  async function manejarFallo(fallo) {
     // 401: la sesión venció. El cliente ya cerró la sesión y redirige al login con el destino guardado.
     if (fallo.status === 401) return;
 
-    if (etapa === "pasajero") {
-      manejarFalloPasajero(fallo);
-      return;
-    }
+    // 400 con errores por campo del pasajero: se vuelve al formulario con los valores cargados.
+    if (fallo.status === 400 && manejarFalloPasajero(fallo)) return;
 
     if (fallo.status === 409) {
       // El 409 no trae un código: se pregunta al servidor si el asiento sigue libre.
@@ -195,28 +194,27 @@ function Reservar({ id }) {
     setErrorAccion(fallo);
   }
 
+  /** Devuelve true si el error es de datos del pasajero y ya se marcó en el formulario. */
   function manejarFalloPasajero(fallo) {
-    const porCampo = CAMPOS_PASAJERO.filter(
-      (campo) => fallo.fieldErrors?.[campo],
-    );
+    const buscados = {
+      nombre: ["nombre", "pasajero.nombre"],
+      apellido: ["apellido", "pasajero.apellido"],
+      dni: ["dni", "documento", "pasajero.documento"],
+      email: ["email", "pasajero.email"],
+      telefono: ["telefono", "pasajero.telefono"],
+    };
+    const errores = {};
 
-    if (porCampo.length > 0) {
-      setErroresCampo(
-        Object.fromEntries(
-          porCampo.map((campo) => [campo, fallo.fieldErrors[campo][0]]),
-        ),
-      );
-    } else if (fallo.status === 409) {
-      setErroresCampo({
-        dni: 'Ya existe un pasajero con ese DNI. Buscalo en "Pasajero existente".',
-      });
-    } else {
-      setErrorAccion(fallo);
-      return;
+    for (const campo of CAMPOS_PASAJERO) {
+      const clave = buscados[campo].find((k) => fallo.fieldErrors?.[k]);
+      if (clave) errores[campo] = fallo.fieldErrors[clave][0];
     }
 
-    // El alta falló por datos del pasajero: se vuelve al formulario con los valores cargados.
+    if (Object.keys(errores).length === 0) return false;
+
+    setErroresCampo(errores);
     setPaso("pasajero");
+    return true;
   }
 
   function continuarConNuevo(datos) {
@@ -242,8 +240,7 @@ function Reservar({ id }) {
   const leads = {
     asiento:
       "Elegí un asiento libre del mapa. Después cargás o elegís al pasajero.",
-    pasajero:
-      "El pasajero es quien viaja. Podés cargar uno nuevo o reutilizar uno existente.",
+    pasajero: "El pasajero es quien viaja. Cargá sus datos para continuar.",
     resumen:
       "Controlá los datos. Al confirmar se crea la reserva y el asiento queda bloqueado.",
     comprobante:
@@ -376,7 +373,7 @@ function Reservar({ id }) {
       );
     } else if (paso === "pasajero") {
       accion =
-        modo === "nuevo" ? (
+        modo === "nuevo" || !isAdmin ? (
           <Button type="submit" form="pasajero-form" icon="arrow">
             Revisar reserva
           </Button>
@@ -399,28 +396,30 @@ function Reservar({ id }) {
             />
           )}
 
-          <div
-            role="group"
-            aria-label="Tipo de pasajero"
-            className="flex gap-6 border-b border-line"
-          >
-            {[
-              ["nuevo", "Pasajero nuevo"],
-              ["existente", "Pasajero existente"],
-            ].map(([valor, texto]) => (
-              <button
-                key={valor}
-                type="button"
-                aria-pressed={modo === valor}
-                onClick={() => elegirModo(valor)}
-                className={`min-h-(--size-touch) border-b-2 text-app-body-sm transition-colors duration-(--duration-state) ${modo === valor ? "border-accent text-ink" : "border-transparent text-ink-faint hover:text-ink"}`}
-              >
-                {texto}
-              </button>
-            ))}
-          </div>
+          {isAdmin && (
+            <div
+              role="group"
+              aria-label="Tipo de pasajero"
+              className="flex gap-6 border-b border-line"
+            >
+              {[
+                ["nuevo", "Pasajero nuevo"],
+                ["existente", "Pasajero existente"],
+              ].map(([valor, texto]) => (
+                <button
+                  key={valor}
+                  type="button"
+                  aria-pressed={modo === valor}
+                  onClick={() => elegirModo(valor)}
+                  className={`min-h-(--size-touch) border-b-2 text-app-body-sm transition-colors duration-(--duration-state) ${modo === valor ? "border-accent text-ink" : "border-transparent text-ink-faint hover:text-ink"}`}
+                >
+                  {texto}
+                </button>
+              ))}
+            </div>
+          )}
 
-          {modo === "nuevo" ? (
+          {modo === "nuevo" || !isAdmin ? (
             <PasajeroForm
               defaultValues={datosNuevo ?? undefined}
               serverErrors={erroresCampo}

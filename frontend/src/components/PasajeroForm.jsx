@@ -76,6 +76,10 @@ export default function PasajeroForm({
         {...register('dni', {
           required: 'Ingresá el DNI.',
           maxLength: { value: 20, message: 'El DNI admite hasta 20 caracteres.' },
+          pattern: {
+            value: /^[A-Za-z0-9]{6,20}$/,
+            message: 'El DNI debe tener entre 6 y 20 letras o números, sin puntos ni espacios.',
+          },
         })}
       />
       <FormField
