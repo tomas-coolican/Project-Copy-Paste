@@ -24,7 +24,7 @@ function Fila({ vuelo, campo, ahora, activa, indice }) {
   return (
     <li
       style={{ animationDelay: `calc(var(--stagger-row) * ${indice})` }}
-      className={`relative grid min-h-16 animate-row-in items-center border-b border-line-inverse py-3.5 transition-colors duration-(--duration-state) hover:bg-surface-band/5 tbl:min-h-[68px] tbl:py-4 ${COLUMNAS} ${activa ? 'bg-linear-to-r from-accent/10 to-transparent to-45%' : ''}`}
+      className={`flight-row-hover grid min-h-16 animate-row-in items-center border-b border-line-inverse py-3.5 tbl:min-h-[68px] tbl:py-4 ${COLUMNAS}`}
     >
       <span className="mt-0.5 self-start whitespace-nowrap font-mono text-app-data text-ink-inverse max-[360px]:text-xs tbl:mt-0 tbl:self-center">
         {activa && <span aria-hidden="true" className="mr-2 inline-block size-[5px] bg-accent align-[2px]" />}

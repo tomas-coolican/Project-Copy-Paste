@@ -1,5 +1,4 @@
 import { Outlet } from 'react-router-dom';
-import BoardTabs from '../components/BoardTabs.jsx';
 import Button from '../components/Button.jsx';
 import Masthead from '../components/Masthead.jsx';
 import useAuth from '../hooks/useAuth.js';
@@ -17,7 +16,7 @@ function AccionesUsuario() {
   );
 }
 
-/** Tablero autenticado: masthead con la sesión y las pestañas de navegación sobre banda ink. */
+/** Tablero autenticado: navegación y sesión comparten el masthead de la landing. */
 export default function DashboardLayout() {
   const { isAdmin } = useAuth();
   const tabs = [
@@ -30,8 +29,7 @@ export default function DashboardLayout() {
 
   return (
     <>
-      <Masthead inlineActions actions={<AccionesUsuario />} />
-      <BoardTabs items={tabs} />
+      <Masthead nav={tabs} actions={<AccionesUsuario />} />
       <main id="contenido" className="pb-16">
         <Outlet />
       </main>
