@@ -107,7 +107,9 @@ var app = builder.Build();
 // Manejo global de errores: cualquier excepción no controlada sale como ProblemDetails.
 app.UseMiddleware<ApiExceptionMiddleware>();
 
-if (app.Environment.IsDevelopment())
+// Swagger: siempre en desarrollo. En producción (deploy) solo si Swagger:Habilitar es true,
+// para poder mostrarlo en la demo (variable de entorno Swagger__Habilitar=true).
+if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("Swagger:Habilitar"))
 {
     app.UseSwagger();
     app.UseSwaggerUI();
@@ -119,6 +121,10 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
+// Chequeo de salud para el hosting (Render): responde sin tocar la base.
+// También sirve para "despertar" el servicio gratuito antes de la demo.
+app.MapGet("/api/salud", () => Results.Ok(new { estado = "ok" }));
 
 // El seed es opcional: solo crea el administrador si se configuraron AdminSeed:Email y AdminSeed:Password.
 // La base debe tener aplicada previamente la migración.

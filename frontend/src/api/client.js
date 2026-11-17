@@ -11,7 +11,9 @@ if (!baseURL) {
 
 const client = axios.create({
   baseURL,
-  timeout: 15000,
+  // 60 s: en el deploy gratuito (Render) la API se duerme tras 15 min sin uso y la primera
+  // petición tarda hasta ~1 min en despertarla. Así se ve "Cargando…" en lugar de un error.
+  timeout: 60000,
   headers: {
     'Content-Type': 'application/json',
   },

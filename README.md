@@ -117,3 +117,7 @@ En Swagger, ejecutá `/api/auth/login`, copiá el valor de `token` de la respues
 ## Integración
 
 Rutas propuestas para acordar con el equipo: `/api/auth/registro` y `/api/auth/login`. Los nombres de roles son exactamente `Administrador` y `Usuario`.
+
+## Deploy
+
+Backend en Render (Docker, `VuelosApi/Dockerfile`) y frontend en Vercel: paso a paso en [docs/DEPLOY.md](docs/DEPLOY.md).
