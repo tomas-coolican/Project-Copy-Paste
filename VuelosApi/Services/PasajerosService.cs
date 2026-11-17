@@ -1,15 +1,15 @@
-using Microsoft.EntityFrameworkCore;
 using VuelosApi.Dtos.Pasajero;
 using VuelosApi.Models;
 using VuelosApi.Repositories;
 
 namespace VuelosApi.Services;
 
+// Reglas de negocio de pasajeros. El acceso a datos queda en IPasajeroRepository.
 public class PasajerosService
 {
-    private readonly Repository<Pasajero> _repositorio;
+    private readonly IPasajeroRepository _repositorio;
 
-    public PasajerosService(Repository<Pasajero> repositorio)
+    public PasajerosService(IPasajeroRepository repositorio)
     {
         _repositorio = repositorio;
     }
@@ -28,17 +28,17 @@ public class PasajerosService
 
     public async Task<PasajeroDTO> CrearAsync(CrearPasajeroDTO dto)
     {
-        bool existe = await _repositorio.Consultar().AnyAsync(p => p.DNI == dto.DNI);
-        if (existe)
+        string dni = dto.DNI.Trim().ToUpperInvariant();
+        if (await _repositorio.ExistePorDniAsync(dni))
             throw new InvalidOperationException("Ya existe un pasajero registrado con ese DNI.");
 
         var pasajero = new Pasajero
         {
-            Nombre = dto.Nombre,
-            Apellido = dto.Apellido,
-            DNI = dto.DNI,
-            Email = dto.Email,
-            Telefono = dto.Telefono
+            Nombre = dto.Nombre.Trim(),
+            Apellido = dto.Apellido.Trim(),
+            DNI = dni,
+            Email = dto.Email.Trim(),
+            Telefono = string.IsNullOrWhiteSpace(dto.Telefono) ? null : dto.Telefono.Trim()
         };
 
         await _repositorio.AgregarAsync(pasajero);
@@ -48,13 +48,11 @@ public class PasajerosService
 
     public async Task<bool> EliminarAsync(int id)
     {
-        var pasajero = await _repositorio.Consultar()
-            .Include(p => p.Reservas)
-            .FirstOrDefaultAsync(p => p.Id == id);
-
+        var pasajero = await _repositorio.ObtenerPorIdAsync(id);
         if (pasajero == null) return false;
+
         // Las reservas (incluso canceladas) quedan como historial, así que no se borra el pasajero
-        if (pasajero.Reservas.Any())
+        if (await _repositorio.TieneReservasAsync(id))
             throw new InvalidOperationException("No se puede eliminar un pasajero que tiene reservas asociadas.");
 
         _repositorio.Eliminar(pasajero);

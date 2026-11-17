@@ -16,9 +16,9 @@ export async function crear(dto) {
   return adaptPasajero(data);
 }
 
+/** Solo Administrador. DELETE responde 204 sin cuerpo. */
 export async function eliminar(id) {
-  const { data } = await client.delete(`/pasajeros/${id}`);
-  return data;
+  await client.delete(`/pasajeros/${id}`);
 }
 
 export default { listar, obtener, crear, eliminar };

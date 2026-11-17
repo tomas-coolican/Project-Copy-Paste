@@ -204,7 +204,7 @@ export default function MisReservasPage() {
         <PageHeader
           breadcrumb="Tablero / reservas"
           title="Mis reservas"
-          lead="Consultá tus reservas, abrí el vuelo asociado y cancelá las que ya no necesites."
+          lead="Consultá tus reservas, mirá el pase de abordar de cada una y cancelá las que ya no necesites."
           actions={
             <Button
               variant="secondary"

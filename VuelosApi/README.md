@@ -38,7 +38,7 @@ Los errores `404` y `409` se devuelven en formato ProblemDetails (`title` y `det
 
 - `GET /api/pasajeros` - listar. Solo `Administrador`.
 - `GET /api/pasajeros/{id}` - detalle. Solo `Administrador`.
-- `POST /api/pasajeros` - crear. Cualquier usuario autenticado.
+- `POST /api/pasajeros` - crear. Solo `Administrador` (un usuario común carga el pasajero dentro de la reserva).
 - `DELETE /api/pasajeros/{id}` - eliminar solo si no tiene reservas asociadas. Solo `Administrador`.
 
 Ejemplo:
@@ -60,7 +60,19 @@ Ejemplo:
 - `POST /api/reservas`
 - `DELETE /api/reservas/{id}` - cancelar una reserva propia (o cualquiera si el usuario es Administrador).
 
-Ejemplo:
+El pasajero se indica de una de dos formas (exactamente una). Con sus datos: se busca por documento y, si no existe, se crea con la reserva.
+
+```json
+{
+  "vueloId": 1,
+  "asientoId": 1,
+  "pasajero": { "nombre": "Ana", "apellido": "Gomez", "documento": "30111222", "email": "ana@mail.com" }
+}
+```
+
+`email` y `telefono` son opcionales y se guardan solo si el pasajero es nuevo.
+
+O, solo un `Administrador`, con un pasajero ya existente (un usuario común que manda `pasajeroId` recibe 403):
 
 ```json
 {
@@ -70,6 +82,8 @@ Ejemplo:
 }
 ```
 
+Detalle de las reglas del módulo en [RESERVAS_CAMBIOS.md](RESERVAS_CAMBIOS.md).
+
 ## Qué hace la lógica de negocio
 
 - Al crear un vuelo se generan automáticamente los asientos.
@@ -78,8 +92,10 @@ Ejemplo:
 - No se reservan vuelos cancelados, finalizados o que ya salieron.
 - Un asiento no puede tener dos reservas confirmadas. Un pasajero tampoco puede tener dos reservas confirmadas para el mismo vuelo.
 - La categoría Ejecutiva cuesta un 50% más que el precio base.
-- Cancelar una reserva libera el asiento para una nueva reserva.
-- No se elimina un pasajero que tenga reservas asociadas. Para los vuelos, Agustín debe aplicar el mismo criterio en `VuelosService` porque las reservas históricas se conservan y sus claves foráneas usan `DeleteBehavior.Restrict`.
+- Cancelar una reserva libera el asiento para una nueva reserva. No se puede cancelar la reserva de un vuelo que ya salió.
+- Cancelar un vuelo (estado Cancelado) cancela sus reservas confirmadas.
+- El estado se muestra automático según el horario: "En vuelo" entre la salida y la llegada, "Finalizado" después.
+- No se elimina un pasajero ni un vuelo que tengan reservas asociadas (aunque estén canceladas): las reservas históricas se conservan y sus claves foráneas usan `DeleteBehavior.Restrict`.
 
 ## Capas
 
@@ -91,6 +107,6 @@ Ejemplo:
 - **Config/AppDbContext:** configura Entity Framework y las relaciones de la base de datos.
 - **Enums:** estados y categorías con valores definidos.
 
-## Alcance de esta primera versión
+## Alcance de esta versión
 
-Incluye vuelos, pasajeros, asientos y reservas. La integración meteorológica Open-Meteo del proyecto anterior se puede incorporar como servicio independiente en una segunda etapa, sin mezclarla con las reglas de reservas.
+Incluye vuelos, pasajeros, asientos y reservas.

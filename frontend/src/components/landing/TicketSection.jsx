@@ -4,7 +4,7 @@ import Loading from '../Loading.jsx';
 import TextLink from '../TextLink.jsx';
 
 /**
- * Ficha ilustrativa del prototipo con datos ficticios explícitos.
+ * Ficha de la próxima salida programada (datos reales de GET /api/vuelos).
  */
 export default function TicketSection({ vuelo, loading }) {
   return (
@@ -27,7 +27,7 @@ export default function TicketSection({ vuelo, loading }) {
             aria-label={`Detalle del vuelo ${vuelo.numeroVuelo}`}
             footer={
               <>
-                <span className="font-mono">Ejemplo con datos ficticios</span>
+                <span className="font-mono">Próxima salida programada</span>
                 <TextLink href="#tablero" size="sm">
                   Ver tablero
                 </TextLink>

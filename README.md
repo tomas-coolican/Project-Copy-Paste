@@ -39,13 +39,13 @@ dotnet user-secrets set "AdminSeed:Password" "una-clave-de-12-o-mas-caracteres"
 
 ### 3. Vuelos de ejemplo (opcional)
 
-Para cargar 3 vuelos con sus asientos:
+Para cargar 15 vuelos de ejemplo con sus asientos (rutas argentinas, con fechas de 1 a 30 días desde el día de carga):
 
 ```powershell
 dotnet user-secrets set "DatosDePrueba:Cargar" "true"
 ```
 
-Solo se cargan si la tabla de vuelos está vacía, así que no duplica nada.
+Se agregan solo los vuelos cuyo código todavía no existe, así que no duplica nada aunque la tabla ya tenga vuelos.
 
 ### 4. Base de datos
 

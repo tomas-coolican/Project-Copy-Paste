@@ -66,8 +66,8 @@ Cómo cambiar el estado de algo: se abre un PR que modifique este documento (`do
 | Integrante | Nombre          | Responsabilidad        | Rama               | Sección                                           |
 | ---------- | --------------- | ---------------------- | ------------------ | ------------------------------------------------- |
 | 1          | Agustín Cabrera | Vuelos y base de datos | `feature/vuelos`   | [3.1](#31-agustín-cabrera-vuelos-y-base-de-datos) |
-| 2          | Ignacio Giménez | Usuarios y seguridad   | `feature/auth`     | [3.2](#32-ignacio-giménez-usuarios-y-seguridad)   |
-| 3          | Alex Ramírez    | Pasajeros y reservas   | `feature/reservas` | [3.3](#33-alex-ramírez-pasajeros-y-reservas)      |
+| 2          | Alex Ramírez | Usuarios y seguridad   | `feature/auth`     | [3.2](#32-ignacio-giménez-usuarios-y-seguridad)   |
+| 3          | Ignacio Giménez  | Pasajeros y reservas   | `feature/reservas` | [3.3](#33-alex-ramírez-pasajeros-y-reservas)      |
 | 4          | Tomás Coolican  | Frontend e integración | `feature/frontend` | [3.4](#34-tomás-coolican-frontend-e-integración)  |
 
 Este reparto de responsabilidades está acordado.
@@ -135,7 +135,7 @@ Pasos para levantar el proyecto:
 | Parte    | Pasos                                                                                            |
 | -------- | ------------------------------------------------------------------------------------------------ |
 | Backend  | Configurar secretos, aplicar migraciones (`dotnet ef database update`) y ejecutar (`dotnet run`) |
-| Frontend | `cd frontend`, `npm install`, crear `.env` a partir de `.env.example` y `npm run dev`            |
+| Frontend | `cd frontend`, `pnpm install`, crear `.env` a partir de `.env.example` y `pnpm dev`               |
 
 Cada vez que se integra una migración nueva en `develop`, todos aplican `dotnet ef database update` después de actualizar su rama.
 
@@ -269,7 +269,7 @@ Campos derivados del contrato `[Propuesto]`:
 | Ignacio | `[Authorize(Roles = ...)]` con los roles definidos en [3.2](#32-ignacio-giménez-usuarios-y-seguridad)                                |               |
 | Tomás   | Puerto del API, origen de CORS, datos de prueba y formato exacto de las fechas con `Z` (ver [4.2](#42-fechas-e-identificadores))     | `[Propuesto]` |
 
-### 3.2 Ignacio Giménez: usuarios y seguridad
+### 3.2 Alex Ramírez: usuarios y seguridad
 
 **Responsabilidades**:
 
@@ -339,7 +339,7 @@ Matriz de permisos `[Propuesto]`:
 | Tomás          | Estructura de la respuesta de autenticación y reglas de validación. Login y registro funcionando lo antes posible, porque el resto depende de ellos | `[Propuesto]` |
 | Todos          | Creación del administrador (sembrado al iniciar la aplicación)                                                                                      | ⚠️ **D9**     |
 
-### 3.3 Alex Ramírez: pasajeros y reservas
+### 3.3 Ignacio Giménez: pasajeros y reservas
 
 **Responsabilidades**:
 

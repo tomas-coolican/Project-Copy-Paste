@@ -14,4 +14,5 @@ public class ReservaDTO
     public string UsuarioNombre { get; set; } = string.Empty;
     public ReservaVueloDTO Vuelo { get; set; } = new();
     public ReservaAsientoDTO Asiento { get; set; } = new();
+    public ReservaPasajeroDTO Pasajero { get; set; } = new();
 }
