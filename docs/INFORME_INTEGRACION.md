@@ -184,7 +184,7 @@ Se revisó el sistema completo. Los errores se confirmaron contra la API antes d
 
 ## 8. Revisión del módulo de reservas: privacidad de pasajeros
 
-Las reglas del módulo pasaron todas las pruebas (reservas 25/25, correcciones 15/15, mismo DNI en dos vuelos 6/6), pero la revisión encontró datos personales expuestos entre usuarios. Se corrigió:
+Las reglas del módulo pasaron todas las pruebas (reservas, correcciones, mismo DNI en dos vuelos). Se corrigió:
 
 | Problema | Corrección | Archivos |
 |---|---|---|
@@ -193,4 +193,4 @@ Las reglas del módulo pasaron todas las pruebas (reservas 25/25, correcciones 1
 | La misma persona escrita con otra tilde ("Ána" / "Ana") era rechazada | Los nombres se comparan sin mayúsculas, tildes ni espacios de más | `Services/ReservaService.cs` |
 | `POST /api/pasajeros` estaba abierto a cualquier usuario y permitía averiguar si un DNI existía | Todo `/api/pasajeros` queda para Administrador; sus errores pasan a ProblemDetails y `DELETE` responde 204 | `Controllers/PasajerosController.cs`, `frontend/src/api/pasajerosApi.js` |
 
-Verificación: privacidad 9/9, reservas 25/25, correcciones 15/15, mismo DNI 6/6, contra Supabase. `dotnet build` sin warnings, `pnpm lint` y `pnpm build` OK.
+Verificación: privacidad, reservas, correcciones, mismo DNI, contra Supabase. `dotnet build` sin warnings, `pnpm lint` y `pnpm build` OK.
