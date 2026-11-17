@@ -1,9 +1,27 @@
 import client from './client.js';
-import { adaptReserva } from './adapters.js';
+import { adaptReserva, ESTADO_RESERVA } from './adapters.js';
 
 export async function listar() {
   const { data } = await client.get('/reservas');
   return data.map(adaptReserva);
+}
+
+const CODIGO_ESTADO = Object.fromEntries(Object.entries(ESTADO_RESERVA).map(([codigo, texto]) => [texto, codigo]));
+
+/**
+ * Página de reservas filtrada en el servidor: GET /reservas?pagina=&tamanio=&estado=&vueloId=.
+ * `estado` es el texto ('Confirmada' / 'Cancelada'); vacío = todos. El total sale del header X-Total-Count.
+ */
+export async function buscar({ pagina = 1, tamanio = 10, estado = '', vueloId = '' } = {}) {
+  const params = { pagina, tamanio };
+  if (estado) params.estado = CODIGO_ESTADO[estado];
+  if (vueloId) params.vueloId = vueloId;
+
+  const { data, headers } = await client.get('/reservas', { params });
+  return {
+    items: data.map(adaptReserva),
+    total: Number(headers['x-total-count'] ?? data.length),
+  };
 }
 
 /**
@@ -36,4 +54,4 @@ export async function cancelar(id) {
   await client.delete(`/reservas/${id}`);
 }
 
-export default { listar, crear, cancelar };
+export default { listar, buscar, crear, cancelar };

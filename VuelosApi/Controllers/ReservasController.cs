@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using VuelosApi.Dtos;
 using VuelosApi.Dtos.Reserva;
 using VuelosApi.Exceptions;
 using VuelosApi.Services;
@@ -29,12 +30,17 @@ public class ReservasController : ControllerBase
     private bool EsAdministrador => User.IsInRole("Administrador");
 
     // D3: Usuario -> sus reservas. Administrador -> todas.
+    // Filtros opcionales ?estado=0&vueloId=3 y paginación opcional ?pagina=1&tamanio=10.
+    // El cuerpo sigue siendo una lista; el total (con filtros, sin paginar) va en X-Total-Count.
     [HttpGet]
     [ProducesResponseType(typeof(List<ReservaDTO>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> ObtenerTodas()
+    public async Task<IActionResult> ObtenerTodas([FromQuery] FiltroReservas filtro, [FromQuery] ParametrosPaginacion paginacion)
     {
-        return Ok(await _servicio.ObtenerTodasAsync(UsuarioId, EsAdministrador));
+        var resultado = await _servicio.ObtenerTodasAsync(UsuarioId, EsAdministrador, filtro, paginacion);
+        Response.Headers["X-Total-Count"] = resultado.Total.ToString();
+        return Ok(resultado.Items);
     }
 
     [HttpGet("{id:int}")]

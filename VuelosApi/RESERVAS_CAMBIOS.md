@@ -103,3 +103,11 @@ Todas las respuestas de error del módulo son `ProblemDetails`: el frontend mues
 ## 6. Pruebas realizadas (16/11/2026, en Supabase)
 
 25/25 verificaciones de API correctas: registro, 401 sin token, 400 por documento inválido, 404 por asiento inexistente, 201 al reservar, 409 por asiento ocupado, por pasajero duplicado y por documento con otro nombre, disponibilidad actualizada, cada usuario ve solo sus reservas, 403 sobre reserva ajena, 403 al crear vuelo sin ser admin, 204 al cancelar, 409 al cancelar dos veces, historial conservado, asiento liberado y re-reservable. Además se probó el flujo completo desde el frontend (elegir asiento → reservar → ver en Mis reservas → cancelar).
+
+## 7. Paginación y filtros del listado
+
+`GET /api/reservas?pagina=1&tamanio=10&estado=0&vueloId=3`: todos los parámetros son opcionales. El Usuario sigue viendo solo sus reservas y el Administrador todas. El cuerpo es un array (de la más nueva a la más vieja) y el header `X-Total-Count` trae el total con filtros y sin paginar. Sin `pagina` ni `tamanio` devuelve todas, como antes.
+
+## 8. Tests automáticos
+
+Las reglas de la sección 3 están cubiertas por `VuelosApi.Tests/ReservaServiceTests.cs` (xUnit, con un repositorio en memoria). Se ejecutan con `dotnet test VuelosApi.Tests` desde la raíz del repo.

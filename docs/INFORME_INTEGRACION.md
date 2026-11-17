@@ -194,3 +194,22 @@ Las reglas del módulo pasaron todas las pruebas (reservas, correcciones, mismo 
 | `POST /api/pasajeros` estaba abierto a cualquier usuario y permitía averiguar si un DNI existía | Todo `/api/pasajeros` queda para Administrador; sus errores pasan a ProblemDetails y `DELETE` responde 204 | `Controllers/PasajerosController.cs`, `frontend/src/api/pasajerosApi.js` |
 
 Verificación: privacidad, reservas, correcciones, mismo DNI, contra Supabase. `dotnet build` sin warnings, `pnpm lint` y `pnpm build` OK.
+
+## 9. Extras: paginación y tests
+
+### Paginación
+
+- **Backend:** `GET /api/vuelos` y `GET /api/reservas` aceptan `?pagina=&tamanio=` (opcionales, tamaño por defecto 10, máximo 100). El cuerpo sigue siendo un array, así que las pantallas que no paginan no cambian; el total sin paginar viaja en el header `X-Total-Count` (expuesto por CORS). `GET /api/reservas` además filtra por `?estado=` (0 Confirmada, 1 Cancelada) y `?vueloId=`. Paginación y filtros se aplican en la base (`Skip`/`Take` en los repositorios). Valores fuera de rango → 400.
+  Archivos: `Dtos/ParametrosPaginacion.cs`, `Dtos/ResultadoPaginado.cs`, `Dtos/Reserva/FiltroReservas.cs`, repositorios, servicios y controllers de vuelos y reservas, `Program.cs` (CORS).
+- **Frontend:** componente `components/Paginacion.jsx` y utilidades `utils/paginacion.js`.
+  - *Administración → Reservas:* paginación y filtros **en el servidor** (`reservasApi.buscar`).
+  - *Vuelos, Mis reservas y Administración → Vuelos:* paginan **en el navegador** la lista ya filtrada (son listas chicas y los filtros de búsqueda ya trabajan en memoria). Al cambiar un filtro se vuelve a la página 1.
+
+### Tests
+
+| Proyecto | Herramienta | Qué cubre | Comando |
+|---|---|---|---|
+| `VuelosApi.Tests/` | xUnit | `ReservaService` (crear, precio ejecutivo, asiento ocupado, duplicados, privacidad del DNI, permisos, cancelar, listar con filtros y páginas), `VueloService` (asientos, capacidad, cancelación en cascada, eliminar, estado por horario, paginación) y validaciones de los DTOs. Usan repositorios en memoria (`Fakes/`): no tocan Supabase. | `dotnet test VuelosApi.Tests` |
+| `frontend/` | Vitest + Testing Library (jsdom) | `utils/paginacion`, `api/adapters`, `utils/errors`, `utils/vuelos`, el componente `Paginacion` y la paginación en el servidor de `AdminReservasPage` (con la API simulada). | `pnpm test` (o `pnpm test:watch`) |
+
+Resultado: 68 tests de backend y 37 de frontend, todos OK. Además se verificó la paginación contra la API real (headers, filtros y 400 por tamaño > 100).

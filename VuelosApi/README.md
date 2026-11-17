@@ -8,7 +8,7 @@ La configuración (secretos, base de datos, administrador y vuelos de ejemplo) e
 
 ### Vuelos
 
-- `GET /api/vuelos` - listar vuelos (incluye `asientosTotales` y `asientosDisponibles`). Público.
+- `GET /api/vuelos` - listar vuelos ordenados por salida (incluye `asientosTotales` y `asientosDisponibles`). Público. Paginación opcional: `?pagina=1&tamanio=10`.
 - `GET /api/vuelos/{id}` - detalle del vuelo con la lista de asientos y su disponibilidad. Público.
 - `POST /api/vuelos` - crear vuelo y generar sus asientos. Solo `Administrador`.
 - `PUT /api/vuelos/{id}` - modificar el vuelo (mismo cuerpo que el POST; `cantidadAsientos` aplica la regla de capacidad). Solo `Administrador`.
@@ -55,7 +55,7 @@ Ejemplo:
 
 ### Reservas
 
-- `GET /api/reservas`
+- `GET /api/reservas` - las del usuario (o todas, si es Administrador). Opcionales: `?pagina=&tamanio=&estado=&vueloId=`.
 - `GET /api/reservas/{id}`
 - `POST /api/reservas`
 - `DELETE /api/reservas/{id}` - cancelar una reserva propia (o cualquiera si el usuario es Administrador).
@@ -96,6 +96,18 @@ Detalle de las reglas del módulo en [RESERVAS_CAMBIOS.md](RESERVAS_CAMBIOS.md).
 - Cancelar un vuelo (estado Cancelado) cancela sus reservas confirmadas.
 - El estado se muestra automático según el horario: "En vuelo" entre la salida y la llegada, "Finalizado" después.
 - No se elimina un pasajero ni un vuelo que tengan reservas asociadas (aunque estén canceladas): las reservas históricas se conservan y sus claves foráneas usan `DeleteBehavior.Restrict`.
+
+## Paginación
+
+Con `pagina` y/o `tamanio` (1 a 100, por defecto 10) los listados devuelven solo esa página. El cuerpo sigue siendo un array y el total sin paginar llega en el header `X-Total-Count`. Sin esos parámetros se devuelve todo.
+
+## Tests
+
+```bash
+dotnet test VuelosApi.Tests
+```
+
+Tests de xUnit de `ReservaService`, `VueloService` y las validaciones de los DTOs, con repositorios en memoria (no usan la base de datos).
 
 ## Capas
 

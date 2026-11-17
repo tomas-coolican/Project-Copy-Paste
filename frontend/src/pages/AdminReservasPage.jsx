@@ -10,10 +10,12 @@ import ErrorMessage from '../components/ErrorMessage.jsx';
 import FormField from '../components/FormField.jsx';
 import Loading from '../components/Loading.jsx';
 import PageHeader from '../components/PageHeader.jsx';
+import Paginacion from '../components/Paginacion.jsx';
 import ReservaRow from '../components/ReservaRow.jsx';
 import useAsync from '../hooks/useAsync.js';
 import { formatCurrency } from '../utils/formatCurrency.js';
 import { formatFechaHora } from '../utils/formatDate.js';
+import { TAMANIO_PAGINA, totalPaginas } from '../utils/paginacion.js';
 
 function ResumenReserva({ reserva }) {
   return (
@@ -34,10 +36,14 @@ function ResumenReserva({ reserva }) {
 }
 
 export default function AdminReservasPage() {
-  const reservasState = useAsync(reservasApi.listar);
-  const vuelosState = useAsync(vuelosApi.listar);
   const [filtroEstado, setFiltroEstado] = useState('');
   const [filtroVuelo, setFiltroVuelo] = useState('');
+  const [pagina, setPagina] = useState(1);
+  // Paginación y filtros en el servidor: cada página es un GET /reservas?pagina=&tamanio=&estado=&vueloId=.
+  const reservasState = useAsync(() =>
+    reservasApi.buscar({ pagina, tamanio: TAMANIO_PAGINA, estado: filtroEstado, vueloId: filtroVuelo }),
+  );
+  const vuelosState = useAsync(vuelosApi.listar);
   const [canceladas, setCanceladas] = useState(() => new Set());
   const [confirmacion, setConfirmacion] = useState(null);
   const [cancelando, setCancelando] = useState(null);
@@ -50,8 +56,10 @@ export default function AdminReservasPage() {
     [vuelosState.data],
   );
 
+  const total = reservasState.data?.total ?? 0;
+
   const reservas = useMemo(() => {
-    const lista = (reservasState.data ?? []).map((reserva) => ({
+    const lista = (reservasState.data?.items ?? []).map((reserva) => ({
       ...reserva,
       estado: canceladas.has(reserva.id) ? 'Cancelada' : reserva.estado,
       vuelo: vuelosPorId.get(reserva.vueloId) ?? null,
@@ -71,17 +79,17 @@ export default function AdminReservasPage() {
     return [...opciones.entries()].sort((a, b) => a[1].localeCompare(b[1], 'es'));
   }, [vuelosState.data, reservas]);
 
-  const visibles = useMemo(
-    () =>
-      reservas.filter(
-        (reserva) =>
-          (!filtroEstado || reserva.estado === filtroEstado) &&
-          (!filtroVuelo || String(reserva.vueloId) === filtroVuelo),
-      ),
-    [reservas, filtroEstado, filtroVuelo],
-  );
-
+  // El servidor ya devuelve solo las reservas de la página con los filtros aplicados.
+  const visibles = reservas;
   const hayFiltros = Boolean(filtroEstado || filtroVuelo);
+
+  // useAsync toma la función del último render, así que alcanza con actualizar el estado y recargar.
+  function cambiarConsulta({ estado = filtroEstado, vuelo = filtroVuelo, nuevaPagina = 1 } = {}) {
+    setFiltroEstado(estado);
+    setFiltroVuelo(vuelo);
+    setPagina(nuevaPagina);
+    reservasState.reload();
+  }
 
   useEffect(() => {
     if (focoPendiente.current === null) return;
@@ -91,8 +99,7 @@ export default function AdminReservasPage() {
   }, [canceladas]);
 
   function limpiarFiltros() {
-    setFiltroEstado('');
-    setFiltroVuelo('');
+    cambiarConsulta({ estado: '', vuelo: '' });
   }
 
   function pedirCancelacion(reserva) {
@@ -123,6 +130,11 @@ export default function AdminReservasPage() {
       setCanceladas((previas) => new Set(previas).add(reserva.id));
       setAnuncio(`Reserva ${reserva.numeroVuelo} cancelada.`);
       setConfirmacion(null);
+      // Si se filtra por "Confirmada", la reserva sale de la lista: se recarga la página
+      // (o la anterior, si era la última reserva de esta página).
+      if (filtroEstado === 'Confirmada') {
+        cambiarConsulta({ nuevaPagina: reservas.length === 1 && pagina > 1 ? pagina - 1 : pagina });
+      }
     } catch (error) {
       setErrores((previos) => ({ ...previos, [reserva.id]: error }));
     } finally {
@@ -144,7 +156,7 @@ export default function AdminReservasPage() {
     );
   } else if (reservasState.loading && !reservasState.data) {
     contenido = <Loading rows={4} label="Cargando reservas…" className="mt-6" />;
-  } else if (reservas.length === 0) {
+  } else if (total === 0 && !hayFiltros) {
     contenido = (
       <EmptyState title="No hay reservas registradas" className="mt-2">
         Cuando los usuarios reserven vuelos, van a aparecer en esta lista.
@@ -167,17 +179,26 @@ export default function AdminReservasPage() {
     );
   } else {
     contenido = (
-      <ul className="m-0 list-none border-t border-line p-0">
-        {visibles.map((reserva) => (
-          <ReservaRow
-            key={reserva.id}
-            reserva={reserva}
-            cancelando={cancelando === reserva.id}
-            error={confirmacion?.id === reserva.id ? undefined : errores[reserva.id]}
-            onCancel={pedirCancelacion}
-          />
-        ))}
-      </ul>
+      <>
+        <ul className="m-0 list-none border-t border-line p-0">
+          {visibles.map((reserva) => (
+            <ReservaRow
+              key={reserva.id}
+              reserva={reserva}
+              cancelando={cancelando === reserva.id}
+              error={confirmacion?.id === reserva.id ? undefined : errores[reserva.id]}
+              onCancel={pedirCancelacion}
+            />
+          ))}
+        </ul>
+        <Paginacion
+          pagina={pagina}
+          totalPaginas={totalPaginas(total, TAMANIO_PAGINA)}
+          total={total}
+          tamanio={TAMANIO_PAGINA}
+          onCambiar={(nueva) => cambiarConsulta({ nuevaPagina: nueva })}
+        />
+      </>
     );
   }
 
@@ -210,7 +231,7 @@ export default function AdminReservasPage() {
               label="Estado"
               control="select"
               value={filtroEstado}
-              onChange={(evento) => setFiltroEstado(evento.target.value)}
+              onChange={(evento) => cambiarConsulta({ estado: evento.target.value })}
             >
               <option value="">Todos los estados</option>
               <option>Confirmada</option>
@@ -220,7 +241,7 @@ export default function AdminReservasPage() {
               label="Vuelo"
               control="select"
               value={filtroVuelo}
-              onChange={(evento) => setFiltroVuelo(evento.target.value)}
+              onChange={(evento) => cambiarConsulta({ vuelo: evento.target.value })}
             >
               <option value="">Todos los vuelos</option>
               {opcionesVuelo.map(([id, codigo]) => (
@@ -263,7 +284,7 @@ export default function AdminReservasPage() {
           <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
             <p aria-live="polite" className="m-0 font-mono text-app-label uppercase text-ink-muted">
               {reservasState.data
-                ? `${reservas.length} ${reservas.length === 1 ? 'reserva' : 'reservas'} · ${visibles.length} ${visibles.length === 1 ? 'visible' : 'visibles'}`
+                ? `${total} ${total === 1 ? 'reserva' : 'reservas'}${hayFiltros ? ' con estos filtros' : ''}`
                 : 'Cargando reservas…'}
             </p>
             {reservasState.updatedAt && (

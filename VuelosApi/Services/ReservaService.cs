@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
+using VuelosApi.Dtos;
 using VuelosApi.Dtos.Reserva;
 using VuelosApi.Enums;
 using VuelosApi.Exceptions;
@@ -22,14 +23,18 @@ public class ReservaService : IReservaService
         _repositorio = repositorio;
     }
 
-    public async Task<List<ReservaDTO>> ObtenerTodasAsync(int usuarioId, bool esAdministrador)
+    public async Task<ResultadoPaginado<ReservaDTO>> ObtenerTodasAsync(
+        int usuarioId, bool esAdministrador, FiltroReservas filtro, ParametrosPaginacion paginacion)
     {
         // D3: el Usuario ve solo las suyas; el Administrador ve todas.
-        var reservas = esAdministrador
-            ? await _repositorio.ObtenerTodasAsync()
-            : await _repositorio.ObtenerPorUsuarioAsync(usuarioId);
+        var (reservas, total) = await _repositorio.BuscarAsync(
+            esAdministrador ? null : usuarioId,
+            filtro.Estado,
+            filtro.VueloId,
+            paginacion.Activa ? paginacion.Saltar : null,
+            paginacion.Activa ? paginacion.Tomar : null);
 
-        return reservas.Select(ConvertirADTO).ToList();
+        return new ResultadoPaginado<ReservaDTO>(reservas.Select(ConvertirADTO).ToList(), total);
     }
 
     public async Task<ReservaDTO?> ObtenerPorIdAsync(int id, int usuarioId, bool esAdministrador)

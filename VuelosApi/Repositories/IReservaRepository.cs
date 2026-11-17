@@ -1,11 +1,15 @@
+using VuelosApi.Enums;
 using VuelosApi.Models;
 
 namespace VuelosApi.Repositories;
 
 public interface IReservaRepository
 {
-    Task<List<Reserva>> ObtenerTodasAsync();
-    Task<List<Reserva>> ObtenerPorUsuarioAsync(int usuarioId);
+    // Listado con filtros opcionales (null = sin filtrar), ordenado de la más nueva a la más vieja.
+    // usuarioId: solo las de ese usuario (el Administrador pasa null para ver todas).
+    // saltar/tomar paginan en la base. Total es la cantidad con filtros y sin paginar.
+    Task<(List<Reserva> Items, int Total)> BuscarAsync(
+        int? usuarioId, EstadoReserva? estado, int? vueloId, int? saltar, int? tomar);
     Task<Reserva?> ObtenerPorIdAsync(int id);
 
     // El pasajero se identifica por documento (DNI): se reutiliza si existe o se crea con la reserva.

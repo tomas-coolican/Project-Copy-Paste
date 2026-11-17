@@ -16,29 +16,29 @@ public class ReservaRepository : IReservaRepository
         _contexto = contexto;
     }
 
-    public async Task<List<Reserva>> ObtenerTodasAsync()
+    public async Task<(List<Reserva> Items, int Total)> BuscarAsync(
+        int? usuarioId, EstadoReserva? estado, int? vueloId, int? saltar, int? tomar)
     {
-        return await _contexto.Reservas
-            .AsNoTracking()
-            .Include(r => r.Pasajero)
-            .Include(r => r.Usuario)
-            .Include(r => r.Vuelo)
-            .Include(r => r.Asiento)
-            .OrderByDescending(r => r.FechaReserva)
-            .ToListAsync();
-    }
+        IQueryable<Reserva> consulta = _contexto.Reservas.AsNoTracking();
 
-    public async Task<List<Reserva>> ObtenerPorUsuarioAsync(int usuarioId)
-    {
-        return await _contexto.Reservas
-            .AsNoTracking()
-            .Where(r => r.UsuarioId == usuarioId)
+        if (usuarioId.HasValue) consulta = consulta.Where(r => r.UsuarioId == usuarioId.Value);
+        if (estado.HasValue) consulta = consulta.Where(r => r.Estado == estado.Value);
+        if (vueloId.HasValue) consulta = consulta.Where(r => r.VueloId == vueloId.Value);
+
+        int total = await consulta.CountAsync();
+
+        IQueryable<Reserva> pagina = consulta
             .Include(r => r.Pasajero)
             .Include(r => r.Usuario)
             .Include(r => r.Vuelo)
             .Include(r => r.Asiento)
             .OrderByDescending(r => r.FechaReserva)
-            .ToListAsync();
+            .ThenByDescending(r => r.Id);       // orden estable entre páginas
+
+        if (saltar.HasValue) pagina = pagina.Skip(saltar.Value);
+        if (tomar.HasValue) pagina = pagina.Take(tomar.Value);
+
+        return (await pagina.ToListAsync(), total);
     }
 
     public async Task<Reserva?> ObtenerPorIdAsync(int id)

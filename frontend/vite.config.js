@@ -9,4 +9,10 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
   },
+  // Tests (pnpm test): Vitest con jsdom para poder renderizar componentes.
+  test: {
+    environment: "jsdom",
+    setupFiles: "./src/test/setup.js",
+    include: ["src/**/*.test.{js,jsx}"],
+  },
 });
