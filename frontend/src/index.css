@@ -234,6 +234,36 @@
   font-weight: 600;
 }
 
+.flight-row-hover {
+  position: relative;
+  isolation: isolate;
+}
+
+.flight-row-hover::before {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  pointer-events: none;
+  background-image: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--color-accent) 10%, transparent),
+    transparent 45%
+  );
+  content: '';
+  opacity: 0;
+  transition: opacity var(--duration-state) var(--ease-out-expo);
+}
+
+.flight-row-hover:hover::before,
+.flight-row-hover:focus-visible::before {
+  opacity: 1;
+}
+
+.flight-row-hover > * {
+  position: relative;
+  z-index: 1;
+}
+
 .masthead {
   transition: transform 320ms cubic-bezier(0.16, 1, 0.3, 1);
 }
