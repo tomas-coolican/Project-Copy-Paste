@@ -9,11 +9,13 @@ import EmptyState from '../components/EmptyState.jsx';
 import ErrorMessage from '../components/ErrorMessage.jsx';
 import Loading from '../components/Loading.jsx';
 import PageHeader from '../components/PageHeader.jsx';
+import Paginacion from '../components/Paginacion.jsx';
 import ReservaRow from '../components/ReservaRow.jsx';
 import TextLink from '../components/TextLink.jsx';
 import useAsync from '../hooks/useAsync.js';
 import { formatCurrency } from '../utils/formatCurrency.js';
 import { formatFechaHora } from '../utils/formatDate.js';
+import { paginar, TAMANIO_PAGINA } from '../utils/paginacion.js';
 
 const FILTROS = [
   { id: 'todas', label: 'Todas' },
@@ -42,6 +44,7 @@ export default function MisReservasPage() {
   const reservasState = useAsync(reservasApi.listar);
   const vuelosState = useAsync(vuelosApi.listar);
   const [filtro, setFiltro] = useState('todas');
+  const [pagina, setPagina] = useState(1);
   const [canceladas, setCanceladas] = useState(() => new Set());
   const [confirmacion, setConfirmacion] = useState(null);
   const [cancelando, setCancelando] = useState(null);
@@ -76,6 +79,14 @@ export default function MisReservasPage() {
 
   const filtroActivo = FILTROS.find((item) => item.id === filtro) ?? FILTROS[0];
   const visibles = filtroActivo.estado ? reservas.filter((reserva) => reserva.estado === filtroActivo.estado) : reservas;
+  // Paginación en el navegador: las pestañas necesitan la lista completa para mostrar los conteos.
+  const pagina_ = paginar(visibles, pagina, TAMANIO_PAGINA);
+
+  // Cambiar de pestaña vuelve a la primera página.
+  function elegirFiltro(id) {
+    setFiltro(id);
+    setPagina(1);
+  }
 
   useEffect(() => {
     if (focoPendiente.current === null) return;
@@ -85,7 +96,7 @@ export default function MisReservasPage() {
   }, [canceladas]);
 
   function seleccionarFiltro(index) {
-    setFiltro(FILTROS[index].id);
+    elegirFiltro(FILTROS[index].id);
     tabRefs.current[index]?.focus();
   }
 
@@ -184,17 +195,26 @@ export default function MisReservasPage() {
     );
   } else {
     contenido = (
-      <ul className="m-0 list-none border-t border-line p-0">
-        {visibles.map((reserva) => (
-          <ReservaRow
-            key={reserva.id}
-            reserva={reserva}
-            cancelando={cancelando === reserva.id}
-            error={confirmacion?.id === reserva.id ? undefined : errores[reserva.id]}
-            onCancel={pedirCancelacion}
-          />
-        ))}
-      </ul>
+      <>
+        <ul className="m-0 list-none border-t border-line p-0">
+          {pagina_.items.map((reserva) => (
+            <ReservaRow
+              key={reserva.id}
+              reserva={reserva}
+              cancelando={cancelando === reserva.id}
+              error={confirmacion?.id === reserva.id ? undefined : errores[reserva.id]}
+              onCancel={pedirCancelacion}
+            />
+          ))}
+        </ul>
+        <Paginacion
+          pagina={pagina_.pagina}
+          totalPaginas={pagina_.totalPaginas}
+          total={pagina_.total}
+          tamanio={TAMANIO_PAGINA}
+          onCambiar={setPagina}
+        />
+      </>
     );
   }
 
@@ -204,7 +224,7 @@ export default function MisReservasPage() {
         <PageHeader
           breadcrumb="Tablero / reservas"
           title="Mis reservas"
-          lead="Consultá tus reservas, abrí el vuelo asociado y cancelá las que ya no necesites."
+          lead="Consultá tus reservas, mirá el pase de abordar de cada una y cancelá las que ya no necesites."
           actions={
             <Button
               variant="secondary"
@@ -235,7 +255,7 @@ export default function MisReservasPage() {
                 aria-selected={activa}
                 aria-controls="panel-reservas"
                 tabIndex={activa ? 0 : -1}
-                onClick={() => setFiltro(item.id)}
+                onClick={() => elegirFiltro(item.id)}
                 onKeyDown={(evento) => manejarTeclado(evento, index)}
                 className={`-mb-px inline-flex min-h-(--size-touch) items-center gap-2 border-b-2 px-0 pb-3 pt-1 font-sans text-app-body-sm font-medium transition-colors duration-(--duration-state) ${
                   activa

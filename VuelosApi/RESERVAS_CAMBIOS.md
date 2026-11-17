@@ -1,107 +1,113 @@
 # Módulo de pasajeros y reservas — estado de implementación
 
-Este documento describe el estado de la rama de Ignacio sobre `VuelosApi` y los puntos que necesitan coordinación con los demás integrantes.
+Actualizado el 16/11/2026 al integrar el módulo con Vuelos, Auth y el frontend.
 
 ## 1. Archivos del módulo
 
-### Entidades y contexto
-- `Models/Pasajero.cs`: datos personales del pasajero y navegación a sus reservas.
-- `Models/Reserva.cs`: fecha, estado, precio y relaciones con Usuario, Pasajero, Vuelo y Asiento.
-- `Models/Usuario.cs`: esqueleto de integración con `Id` y colección de reservas. Alex debe completar esta misma clase, no crear otra entidad `Usuario`.
-- `Config/AppDbContext.cs`: `DbSet` y configuración de claves foráneas, restricciones de borrado e índices.
+| Capa | Archivo | Qué hace |
+|---|---|---|
+| Models | `Models/Pasajero.cs` | Nombre, apellido, DNI (único), email, teléfono y navegación a sus reservas. |
+| Models | `Models/Reserva.cs` | Fecha, estado, precio pagado y FKs a `Usuario`, `Pasajero`, `Vuelo` y `Asiento`. |
+| DTOs (entrada) | `Dtos/Reserva/CrearReservaDTO.cs` | `vueloId`, `asientoId` y el pasajero: `pasajero` anidado (contrato 4.5) o `pasajeroId` (exactamente uno). |
+| DTOs (entrada) | `Dtos/Reserva/PasajeroReservaDTO.cs` | `nombre`, `apellido`, `documento` (obligatorios) y `email`, `telefono` (opcionales), con validaciones. |
+| DTOs (salida) | `Dtos/Reserva/ReservaDTO.cs` | Reserva con `vuelo`, `asiento` y `pasajero` anidados. |
+| DTOs (salida) | `Dtos/Reserva/ReservaVueloDTO.cs`, `ReservaAsientoDTO.cs`, `ReservaPasajeroDTO.cs` | Partes anidadas de la respuesta. |
+| Repository | `Repositories/IReservaRepository.cs` / `ReservaRepository.cs` | Consultas EF Core de reservas, y búsqueda/alta de pasajero por DNI. |
+| Repository | `Repositories/IPasajeroRepository.cs` / `PasajeroRepository.cs` | Acceso a datos de pasajeros (reemplaza al repositorio genérico `Repository<T>`). |
+| Service | `Services/IReservaService.cs` / `ReservaService.cs` | Reglas de negocio. No usa EF Core. |
+| Service | `Services/PasajerosService.cs` | Alta, consulta y baja de pasajeros. |
+| Controller | `Controllers/ReservasController.cs` | `GET`, `GET {id}`, `POST`, `DELETE` con `[Authorize]`. |
+| Controller | `Controllers/PasajerosController.cs` | CRUD administrativo de pasajeros (sin cambios). |
+| Middleware | `Middleware/ApiExceptionMiddleware.cs` | Manejo global de errores (D11) en formato ProblemDetails. |
 
-### DTOs
-- `Dtos/Reserva/CrearReservaDTO.cs`: se conserva el contrato que ya tenía `VuelosApi`: `PasajeroId`, `VueloId` y `AsientoId`.
-- `Dtos/Reserva/ReservaDTO.cs`: la respuesta anida `vuelo` (`id`, `codigo`, `origen`, `destino`, `fechaSalida`) y `asiento` (`id`, `numero`, `categoria`), según el contrato 4.5. Los datos del pasajero siguen planos hasta resolver D1.
+## 2. Endpoints
 
-El `UsuarioId` no se incluye en el DTO. El backend lo toma del claim del token JWT para evitar que el cliente elija a nombre de quién reservar.
+| Método | Ruta | Acceso | Respuestas |
+|---|---|---|---|
+| GET | `/api/reservas` | Con sesión | 200. Usuario: sus reservas. Administrador: todas (D3). |
+| GET | `/api/reservas/{id}` | Dueño o Administrador | 200, 403, 404 |
+| POST | `/api/reservas` | Con sesión | 201, 400, 401, 404, 409 |
+| DELETE | `/api/reservas/{id}` | Dueño o Administrador | 204, 403, 404, 409 |
 
-### Repository
-- `Repositories/IReservaRepository.cs`: define las operaciones específicas de lectura y persistencia para reservas.
-- `Repositories/ReservaRepository.cs`: implementa esas operaciones con EF Core.
-
-### Service
-- `Services/IReservaService.cs`: contrato de las operaciones disponibles para el Controller.
-- `Services/ReservaService.cs`: contiene las reglas de negocio y transforma las entidades a DTOs.
-
-### Controller
-- `Controllers/ReservasController.cs`: expone GET, GET por id, POST y DELETE. Aplica `[Authorize]`, identifica al usuario desde los claims y traduce los resultados del Service a códigos HTTP.
-
-### Registro de dependencias
-- `Program.cs`: registra `IReservaRepository`/`ReservaRepository` y `IReservaService`/`ReservaService`.
-
-## 2. Reglas implementadas
-
-1. El usuario que crea la reserva se obtiene del JWT (`Id` numérico; como alternativa se admite un `NameIdentifier` numérico).
-2. El pasajero, el vuelo y el asiento deben existir.
-3. El asiento debe pertenecer al vuelo informado.
-4. Solo se reservan vuelos programados cuya salida sea futura. Se asume que las fechas se almacenan en UTC.
-5. Un asiento no puede tener dos reservas confirmadas.
-6. Un pasajero no puede tener dos reservas confirmadas para el mismo vuelo.
-7. El precio se obtiene del vuelo; la categoría Ejecutivo conserva el recargo del 50 % que ya tenía el proyecto.
-8. Un usuario consulta y cancela sus propias reservas. El rol `Administrador` puede consultar y cancelar cualquiera.
-9. La cancelación es lógica: cambia `Estado` a `Cancelada` y conserva el registro.
-10. La disponibilidad se deduce de la existencia de una reserva `Confirmada`; no se duplica un campo de disponibilidad en `Asiento`.
-11. Los índices únicos filtrados de SQL Server protegen las reglas de asiento y pasajero-vuelo también ante solicitudes simultáneas.
-12. No se permite eliminar un pasajero si tiene cualquier reserva asociada, incluso cancelada, porque el historial se conserva y la FK usa `DeleteBehavior.Restrict`.
-
-## 3. Contrato de creación conservado
-
-`POST /api/reservas` recibe:
+### Crear reserva
 
 ```json
 {
-  "pasajeroId": 1,
   "vueloId": 1,
-  "asientoId": 1
+  "asientoId": 101,
+  "pasajero": {
+    "nombre": "Ana",
+    "apellido": "Pérez",
+    "documento": "30123456",
+    "email": "ana@mail.com",
+    "telefono": "3415555555"
+  }
 }
 ```
 
-No recibe `usuarioId`. El usuario se identifica mediante el JWT.
+`email` y `telefono` son opcionales y se guardan solo si el pasajero es nuevo. Es el formato que usa la pantalla de reserva (`ReservarPage`): así se puede volver a reservar para alguien que ya viajó, porque el backend lo reutiliza por documento.
 
-Importante para el frontend: con este DTO, primero debe existir el pasajero (por ejemplo, creado mediante `POST /api/pasajeros`) y luego se envía su `pasajeroId` al crear la reserva.
+El `usuarioId` **no** viaja: se toma del claim `Id` del token (o `NameIdentifier` como respaldo).
 
-## 4. Endpoints del módulo
+También se acepta un pasajero ya existente por id, **solo para el Administrador** (lo usa con "Pasajero existente", que lista `GET /api/pasajeros`). Si un Usuario común manda `pasajeroId` → 403: así nadie puede reservar a nombre de un pasajero que no cargó ni ver sus datos probando ids.
 
-| Método | Ruta | Comportamiento |
-|---|---|---|
-| GET | `/api/reservas` | Usuario: sus reservas. Administrador: todas. |
-| GET | `/api/reservas/{id}` | Detalle si pertenece al usuario o si es administrador. |
-| POST | `/api/reservas` | Crea una reserva para el usuario autenticado. |
-| DELETE | `/api/reservas/{id}` | Cancela una reserva propia o cualquiera si es administrador. |
+```json
+{ "vueloId": 1, "asientoId": 101, "pasajeroId": 5 }
+```
 
-Respuestas principales: 200, 201, 204, 400, 401, 403, 404 y 409 según el caso.
+Hay que mandar **exactamente uno** de los dos (`pasajero` o `pasajeroId`); si faltan ambos o vienen los dos → 400. Un `pasajeroId` inexistente → 404. Las reglas de duplicado valen igual en los dos casos.
 
-## 5. Integración pendiente con Alex (autenticación)
+### Respuesta
 
-- Completar `Models/Usuario.cs` con los campos reales de usuario, email/nombre, hash de contraseña y rol que defina Alex, conservando `Id` como `int` y `List<Reserva> Reservas` como navegación.
-- El JWT debe contener un claim `Id` con el ID numérico del usuario. El Controller admite `ClaimTypes.NameIdentifier` solo si contiene un entero.
-- El rol debe emitirse como claim de rol estándar (`ClaimTypes.Role`) con el valor exacto `Administrador` para que `User.IsInRole("Administrador")` funcione.
-- Alex debe configurar `AddAuthentication().AddJwtBearer(...)`, `AddAuthorization()`, `UseAuthentication()` y `UseAuthorization()`.
-- Alex debe revisar la duración y validación de JWT, y nunca almacenar contraseñas en texto plano.
+```json
+{
+  "id": 7,
+  "fechaReserva": "2026-11-16T14:57:51Z",
+  "estado": 0,
+  "precioPagado": 85000,
+  "pasajeroId": 3,
+  "nombrePasajero": "Ana Pérez",
+  "usuarioId": 10,
+  "usuarioNombre": "Ana",
+  "vuelo": { "id": 1, "codigo": "AR1024", "origen": "Buenos Aires", "destino": "Córdoba", "fechaSalida": "...Z", "fechaLlegada": "...Z" },
+  "asiento": { "id": 12, "numero": "02", "categoria": 0 },
+  "pasajero": { "nombre": "Ana", "apellido": "Pérez", "documento": "30123456" }
+}
+```
 
-Hasta integrar estos puntos, `[Authorize]` está colocado en el Controller, pero el proyecto todavía no tiene autenticación funcional.
+`estado`: 0 = Confirmada, 1 = Cancelada. `categoria`: 0 = Turista, 1 = Ejecutivo. Los campos planos (`pasajeroId`, `nombrePasajero`, `usuarioId`, `usuarioNombre`) se mantienen porque el frontend ya los usa.
 
-## 6. Integración pendiente con Agustín (datos y migraciones)
+## 3. Reglas de negocio (en `ReservaService`)
 
-- Mantener `UsuarioId` como FK requerida de `Reserva` hacia `Usuario` y completar la misma entidad `Usuario`, sin duplicarla.
-- Generar la migración cuando estén integrados los modelos definitivos de Usuario, Vuelo, Asiento, Pasajero y Reserva.
-- Revisar los índices únicos filtrados de SQL Server: `[Estado] = 0` corresponde a `EstadoReserva.Confirmada`.
-- Si la base ya tiene reservas, resolver cómo asignar un `UsuarioId` válido antes de convertir la columna en requerida.
-- Revisar `VuelosService.EliminarAsync`: actualmente impide eliminar vuelos con reservas confirmadas, pero la FK restrictiva también impide eliminar vuelos con reservas canceladas. Para conservar el historial, debe impedirse borrar un vuelo con cualquier reserva asociada y devolver 409.
-- Confirmar que `FechaSalida` se recibe y almacena en UTC, ya que `ReservaService` compara contra `DateTime.UtcNow`.
+1. El usuario sale del JWT, nunca del body.
+2. El vuelo debe existir (404), estar **Programado** (409) y no haber salido (409).
+3. El asiento debe existir y pertenecer a ese vuelo (404).
+4. **Sin disponibilidad:** si el asiento ya tiene una reserva Confirmada → 409 "El asiento 02 ya está reservado."
+5. **Pasajero (D1):** se busca por documento. Si no existe se crea junto con la reserva; si existe se reutiliza. El nombre y el apellido se comparan sin tener en cuenta mayúsculas, tildes ni espacios de más ("Ána Pérez" = "ana perez"). Si no coinciden → 409 con un mensaje genérico ("No pudimos validar los datos del pasajero…"), que **no revela** a nombre de quién está el documento.
+6. **Duplicados:** un pasajero no puede tener dos reservas Confirmadas en el mismo vuelo → 409.
+7. Precio: el del vuelo; los asientos Ejecutivos tienen un recargo del 50 %.
+8. **Concurrencia:** dos pedidos simultáneos por el mismo asiento los frena el índice único filtrado de PostgreSQL (`"Estado" = 0`); el repositorio traduce la violación a 409.
+9. **Cancelar (D2):** cancelación lógica. La reserva pasa a `Cancelada`, queda como historial y el asiento vuelve a estar disponible (D5: la disponibilidad se deriva de que no haya reserva Confirmada). Cancelar dos veces → 409. Tampoco se puede cancelar la reserva de un vuelo que ya salió → 409. Si el Administrador cancela el vuelo, sus reservas confirmadas se cancelan solas.
+10. Un Usuario solo ve y cancela sus reservas (403 si es ajena); el Administrador puede todas.
+11. No se elimina un pasajero que tenga reservas (aunque estén canceladas).
+12. **Privacidad de pasajeros:** `/api/pasajeros` (listar, ver, crear, eliminar) es solo para Administrador, porque tiene datos personales. Un Usuario común carga el pasajero dentro de la reserva.
 
-Agustín es el responsable de generar y coordinar las migraciones compartidas.
+## 4. Errores
 
-## 7. Integración pendiente con Tomás (frontend)
+Todas las respuestas de error del módulo son `ProblemDetails`: el frontend muestra el `detail`. Los 400 de validación los genera `[ApiController]` con el mapa `errors` (por ejemplo `"Pasajero.Documento"`).
 
-- Enviar `pasajeroId`, `vueloId` y `asientoId` en `POST /api/reservas`.
-- No enviar `usuarioId`.
-- Crear/seleccionar primero un pasajero porque el DTO actual recibe un `PasajeroId` ya existente.
-- Enviar `Authorization: Bearer <token>` en las cuatro operaciones protegidas.
-- Manejar 401 (sesión ausente/vencida), 403 (sin permiso), 404 (no encontrado) y 409 (asiento ocupado o reserva duplicada).
-- Mostrar el estado de la reserva y actualizar la disponibilidad al cancelar.
+## 5. Pendiente para coordinar
 
-## 8. Estado de compilación y pruebas
+- **Agustín (migraciones):** `Pasajero.Email` es obligatorio en la base, pero el contrato de reservas no pide email. Por ahora los pasajeros creados desde una reserva se guardan con email vacío. Si el grupo quiere que sea opcional, hace falta una migración incremental (`AlterColumn` a nullable). No se modificó la migración `Inicial` porque ya está aplicada en Supabase.
 
-Se revisó el código de forma estática y se ajustaron las relaciones y los comportamientos descritos. En este entorno no está instalado el SDK de .NET (`dotnet` no está disponible), por lo que no se pudo ejecutar `dotnet build`, generar migraciones ni probar los endpoints. Esas verificaciones deben realizarse en el entorno de desarrollo del grupo después de integrar la entidad Usuario y la configuración JWT.
+## 6. Pruebas realizadas (16/11/2026, en Supabase)
+
+25/25 verificaciones de API correctas: registro, 401 sin token, 400 por documento inválido, 404 por asiento inexistente, 201 al reservar, 409 por asiento ocupado, por pasajero duplicado y por documento con otro nombre, disponibilidad actualizada, cada usuario ve solo sus reservas, 403 sobre reserva ajena, 403 al crear vuelo sin ser admin, 204 al cancelar, 409 al cancelar dos veces, historial conservado, asiento liberado y re-reservable. Además se probó el flujo completo desde el frontend (elegir asiento → reservar → ver en Mis reservas → cancelar).
+
+## 7. Paginación y filtros del listado
+
+`GET /api/reservas?pagina=1&tamanio=10&estado=0&vueloId=3`: todos los parámetros son opcionales. El Usuario sigue viendo solo sus reservas y el Administrador todas. El cuerpo es un array (de la más nueva a la más vieja) y el header `X-Total-Count` trae el total con filtros y sin paginar. Sin `pagina` ni `tamanio` devuelve todas, como antes.
+
+## 8. Tests automáticos
+
+Las reglas de la sección 3 están cubiertas por `VuelosApi.Tests/ReservaServiceTests.cs` (xUnit, con un repositorio en memoria). Se ejecutan con `dotnet test VuelosApi.Tests` desde la raíz del repo.

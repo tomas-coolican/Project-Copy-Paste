@@ -81,7 +81,19 @@ export function adaptReserva(dto) {
     estadoCodigo: dto.estado,
     precioPagado: Number(dto.precioPagado),
     pasajeroId: dto.pasajeroId,
-    nombrePasajero: dto.nombrePasajero,
+    nombrePasajero:
+      dto.nombrePasajero ?? `${dto.pasajero?.nombre ?? ''} ${dto.pasajero?.apellido ?? ''}`.trim(),
+    documentoPasajero: dto.pasajero?.documento ?? '',
+    usuarioNombre: dto.usuarioNombre ?? '',
+    // Datos del vuelo que ya trae la reserva (para el pase de abordar).
+    vueloResumen: dto.vuelo
+      ? {
+          origen: dto.vuelo.origen,
+          destino: dto.vuelo.destino,
+          fechaSalida: parseApiDate(dto.vuelo.fechaSalida),
+          fechaLlegada: parseApiDate(dto.vuelo.fechaLlegada),
+        }
+      : null,
     vueloId: dto.vuelo?.id ?? dto.vueloId,
     numeroVuelo: dto.vuelo?.codigo ?? dto.numeroVuelo ?? '',
     asientoId: dto.asiento?.id ?? dto.asientoId,

@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import PaseReserva from './PaseReserva.jsx';
 import { formatCurrency } from '../utils/formatCurrency.js';
 import { formatFechaHora } from '../utils/formatDate.js';
 import Icon from './Icon.jsx';
@@ -20,12 +22,18 @@ function Ruta({ vuelo }) {
   );
 }
 
-function Acciones({ reserva, cancelando, cancelada, onCancel }) {
+function Acciones({ reserva, cancelando, cancelada, onCancel, paseAbierto, onTogglePase }) {
   return (
     <div className="flex flex-wrap items-center gap-x-5 gap-y-2 tbl:justify-end">
-      <TextLink as={Link} to={`/dashboard/vuelos/${reserva.vueloId}`} size="sm">
-        Ver detalle
-      </TextLink>
+      <button
+        type="button"
+        onClick={onTogglePase}
+        aria-expanded={paseAbierto}
+        aria-controls={`pase-${reserva.id}`}
+        className="inline-flex min-h-(--size-touch) items-center border-b border-line-strong pb-0.5 font-sans text-app-body-sm font-medium text-ink transition-colors duration-(--duration-state) hover:border-ink"
+      >
+        {paseAbierto ? 'Ocultar pase' : 'Ver pase'}
+      </button>
 
       {cancelada ? (
         <span className="text-app-label text-ink-muted">La reserva está cancelada.</span>
@@ -45,6 +53,7 @@ function Acciones({ reserva, cancelando, cancelada, onCancel }) {
 }
 
 export default function ReservaRow({ reserva, compact = false, cancelando = false, error, onCancel }) {
+  const [paseAbierto, setPaseAbierto] = useState(false);
   const cancelada = reserva.estado === 'Cancelada';
   const salida = reserva.vuelo?.fechaSalida;
 
@@ -115,8 +124,21 @@ export default function ReservaRow({ reserva, compact = false, cancelando = fals
           </p>
         </div>
 
-        <Acciones reserva={reserva} cancelando={cancelando} cancelada={cancelada} onCancel={onCancel} />
+        <Acciones
+          reserva={reserva}
+          cancelando={cancelando}
+          cancelada={cancelada}
+          onCancel={onCancel}
+          paseAbierto={paseAbierto}
+          onTogglePase={() => setPaseAbierto((abierto) => !abierto)}
+        />
       </div>
+
+      {paseAbierto && (
+        <div id={`pase-${reserva.id}`} className="px-1 pb-6 pt-1">
+          <PaseReserva reserva={reserva} />
+        </div>
+      )}
 
       {error && (
         <p role="alert" className="m-0 px-1 pb-4 text-app-body-sm text-danger">

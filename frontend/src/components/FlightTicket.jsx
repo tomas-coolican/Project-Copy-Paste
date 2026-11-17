@@ -91,7 +91,7 @@ export default function FlightTicket({ vuelo, footer, reveal = false, showcase =
         </div>
         <RouteLine origen={vuelo.origen} destino={vuelo.destino} variant="ticket" />
         <span className="text-app-body-sm text-ink-muted">
-          {showcase
+          {showcase && vuelo.origenCiudad
             ? `${vuelo.origenCiudad} → ${vuelo.destinoCiudad}`
             : `${codigos ? 'Salida el ' : 'Sale el '}${formatFechaLarga(vuelo.fechaSalida)}`}
         </span>

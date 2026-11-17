@@ -10,6 +10,7 @@ import ErrorMessage from '../components/ErrorMessage.jsx';
 import FormField from '../components/FormField.jsx';
 import Loading from '../components/Loading.jsx';
 import PageHeader from '../components/PageHeader.jsx';
+import Paginacion from '../components/Paginacion.jsx';
 import StatusIndicator from '../components/StatusIndicator.jsx';
 import TextLink from '../components/TextLink.jsx';
 import useAsync from '../hooks/useAsync.js';
@@ -17,6 +18,7 @@ import { toApiDateTime } from '../api/adapters.js';
 import { toApiError } from '../utils/errors.js';
 import { formatCurrency } from '../utils/formatCurrency.js';
 import { formatFechaHora, toDateTimeLocal } from '../utils/formatDate.js';
+import { paginar, TAMANIO_PAGINA } from '../utils/paginacion.js';
 
 const FORM_VACIO = {
   codigo: '',
@@ -132,6 +134,7 @@ export default function AdminVuelosPage() {
   const [eliminando, setEliminando] = useState(false);
   const [errorEliminar, setErrorEliminar] = useState(null);
   const [anuncio, setAnuncio] = useState('');
+  const [pagina, setPagina] = useState(1);
   const triggerRef = useRef(null);
 
   const vuelos = useMemo(
@@ -141,6 +144,9 @@ export default function AdminVuelosPage() {
       ),
     [vuelosState.data],
   );
+
+  // La tabla y la lista de celular muestran la misma página.
+  const pagina_ = paginar(vuelos, pagina, TAMANIO_PAGINA);
 
   const capacidadLegado = Boolean(vueloEditando) && vueloEditando.capacidad < 1;
 
@@ -301,7 +307,7 @@ export default function AdminVuelosPage() {
               </tr>
             </thead>
             <tbody>
-              {vuelos.map((vuelo) => (
+              {pagina_.items.map((vuelo) => (
                 <tr key={vuelo.id} className="border-b border-line align-top">
                   <th scope="row" className="py-4 pr-4 font-mono text-app-data font-medium">
                     <Link to={`/dashboard/vuelos/${vuelo.id}`} className="text-ink underline-offset-4 hover:underline">
@@ -330,7 +336,7 @@ export default function AdminVuelosPage() {
         </div>
 
         <ul className="m-0 list-none border-t border-line p-0 md:hidden">
-          {vuelos.map((vuelo) => (
+          {pagina_.items.map((vuelo) => (
             <li key={vuelo.id} className="border-b border-line py-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
@@ -365,6 +371,14 @@ export default function AdminVuelosPage() {
             </li>
           ))}
         </ul>
+
+        <Paginacion
+          pagina={pagina_.pagina}
+          totalPaginas={pagina_.totalPaginas}
+          total={pagina_.total}
+          tamanio={TAMANIO_PAGINA}
+          onCambiar={setPagina}
+        />
       </>
     );
   }

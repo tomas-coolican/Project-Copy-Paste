@@ -1,3 +1,4 @@
+using VuelosApi.Dtos;
 using VuelosApi.Dtos.Vuelo;
 using VuelosApi.Enums;
 using VuelosApi.Exceptions;
@@ -15,10 +16,14 @@ public class VueloService : IVueloService
         _repositorio = repositorio;
     }
 
-    public async Task<List<VueloDTO>> ObtenerTodosAsync()
+    public async Task<ResultadoPaginado<VueloDTO>> ObtenerTodosAsync(ParametrosPaginacion paginacion)
     {
-        var vuelos = await _repositorio.ObtenerTodosAsync();
-        return vuelos.Select(ConvertirADTO).ToList();
+        var vuelos = paginacion.Activa
+            ? await _repositorio.ObtenerTodosAsync(paginacion.Saltar, paginacion.Tomar)
+            : await _repositorio.ObtenerTodosAsync();
+
+        int total = paginacion.Activa ? await _repositorio.ContarAsync() : vuelos.Count;
+        return new ResultadoPaginado<VueloDTO>(vuelos.Select(ConvertirADTO).ToList(), total);
     }
 
     public async Task<VueloDetalleDTO?> ObtenerPorIdAsync(int id)
@@ -37,8 +42,8 @@ public class VueloService : IVueloService
             NumeroVuelo = dto.Codigo,
             Origen = dto.Origen,
             Destino = dto.Destino,
-            FechaSalida = dto.FechaSalida,
-            FechaLlegada = dto.FechaLlegada,
+            FechaSalida = dto.FechaSalida!.Value,
+            FechaLlegada = dto.FechaLlegada!.Value,
             PrecioBase = dto.Precio,
             Capacidad = dto.CantidadAsientos,
             Estado = EstadoVuelo.Programado
@@ -75,11 +80,20 @@ public class VueloService : IVueloService
         vuelo.NumeroVuelo = dto.Codigo;
         vuelo.Origen = dto.Origen;
         vuelo.Destino = dto.Destino;
-        vuelo.FechaSalida = dto.FechaSalida;
-        vuelo.FechaLlegada = dto.FechaLlegada;
+        vuelo.FechaSalida = dto.FechaSalida!.Value;
+        vuelo.FechaLlegada = dto.FechaLlegada!.Value;
         vuelo.PrecioBase = dto.Precio;
         vuelo.Capacidad = dto.CantidadAsientos;
-        if (dto.Estado.HasValue) vuelo.Estado = dto.Estado.Value;
+
+        if (dto.Estado.HasValue)
+        {
+            // Si el vuelo pasa a Cancelado, sus reservas confirmadas se cancelan también:
+            // si no, el pasajero seguiría viendo "Confirmada" en un vuelo que no sale.
+            if (dto.Estado.Value == EstadoVuelo.Cancelado && vuelo.Estado != EstadoVuelo.Cancelado)
+                CancelarReservasConfirmadas(vuelo);
+
+            vuelo.Estado = dto.Estado.Value;
+        }
 
         await _repositorio.GuardarCambiosAsync();
 
@@ -156,6 +170,31 @@ public class VueloService : IVueloService
         return !asiento.Reservas.Any(r => r.Estado == EstadoReserva.Confirmada);
     }
 
+    // El vuelo se cargó con asientos y reservas (con tracking), así que el cambio de estado
+    // se guarda en el mismo GuardarCambiosAsync del PUT.
+    private static void CancelarReservasConfirmadas(Vuelo vuelo)
+    {
+        foreach (var reserva in vuelo.Asientos.SelectMany(a => a.Reservas))
+        {
+            if (reserva.Estado == EstadoReserva.Confirmada)
+                reserva.Estado = EstadoReserva.Cancelada;
+        }
+    }
+
+    // Estado que ve el usuario: el guardado, salvo que el horario ya indique otra cosa.
+    // Un vuelo Programado pasa a "En vuelo" entre la salida y la llegada, y a "Finalizado"
+    // después de la llegada. Cancelado nunca cambia solo. No se escribe en la base.
+    private static EstadoVuelo EstadoSegunHorario(Vuelo vuelo)
+    {
+        if (vuelo.Estado is EstadoVuelo.Cancelado or EstadoVuelo.Finalizado)
+            return vuelo.Estado;
+
+        DateTime ahora = DateTime.UtcNow;
+        if (ahora >= vuelo.FechaLlegada) return EstadoVuelo.Finalizado;
+        if (ahora >= vuelo.FechaSalida) return EstadoVuelo.EnVuelo;
+        return vuelo.Estado;
+    }
+
     private static VueloDTO ConvertirADTO(Vuelo vuelo)
     {
         return new VueloDTO
@@ -169,7 +208,7 @@ public class VueloService : IVueloService
             Precio = vuelo.PrecioBase,
             AsientosTotales = vuelo.Asientos.Count,
             AsientosDisponibles = vuelo.Asientos.Count(EstaDisponible),
-            Estado = vuelo.Estado
+            Estado = EstadoSegunHorario(vuelo)
         };
     }
 

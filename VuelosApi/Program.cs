@@ -4,6 +4,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Microsoft.EntityFrameworkCore;
 using VuelosApi.Config;
+using VuelosApi.Middleware;
 using VuelosApi.Repositories;
 using VuelosApi.Services;
 
@@ -40,7 +41,7 @@ builder.Services.AddSwaggerGen(opciones =>
     });
 });
 
-// Conexión a SQL Server, que es el proveedor configurado actualmente en el proyecto.
+// Conexión a PostgreSQL (Supabase) con Npgsql.
 builder.Services.AddDbContext<AppDbContext>(opciones =>
     opciones.UseNpgsql(builder.Configuration.GetConnectionString("Supabase")));
 
@@ -74,13 +75,16 @@ builder.Services
 builder.Services.AddAuthorization();
 
 // Repositorios y servicios de la aplicación.
-builder.Services.AddScoped(typeof(Repository<>));
+// Vuelos
 builder.Services.AddScoped<IVueloRepository, VueloRepository>();
 builder.Services.AddScoped<IVueloService, VueloService>();
-builder.Services.AddScoped<PasajerosService>();
-builder.Services.AddScoped<IReservaService, ReservaService>();
-builder.Services.AddScoped<IReservaRepository, ReservaRepository>();
+// Auth
 builder.Services.AddScoped<AuthService>();
+// Pasajeros y reservas
+builder.Services.AddScoped<IPasajeroRepository, PasajeroRepository>();
+builder.Services.AddScoped<PasajerosService>();
+builder.Services.AddScoped<IReservaRepository, ReservaRepository>();
+builder.Services.AddScoped<IReservaService, ReservaService>();
 
 // CORS: orígenes permitidos configurables. En desarrollo, Vite usa http://localhost:5173.
 var origenesPermitidos = builder.Configuration
@@ -93,13 +97,19 @@ builder.Services.AddCors(opciones =>
     {
         politica.WithOrigins(origenesPermitidos)
             .AllowAnyHeader()
-            .AllowAnyMethod();
+            .AllowAnyMethod()
+            .WithExposedHeaders("X-Total-Count"); // el frontend lee el total de los listados paginados
     });
 });
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
+// Manejo global de errores: cualquier excepción no controlada sale como ProblemDetails.
+app.UseMiddleware<ApiExceptionMiddleware>();
+
+// Swagger: siempre en desarrollo. En producción (deploy) solo si Swagger:Habilitar es true,
+// para poder mostrarlo en la demo (variable de entorno Swagger__Habilitar=true).
+if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("Swagger:Habilitar"))
 {
     app.UseSwagger();
     app.UseSwaggerUI();
@@ -112,15 +122,30 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
+// Chequeo de salud para el hosting (Render): responde sin tocar la base.
+// También sirve para "despertar" el servicio gratuito antes de la demo.
+app.MapGet("/api/salud", () => Results.Ok(new { estado = "ok" }));
+
 // El seed es opcional: solo crea el administrador si se configuraron AdminSeed:Email y AdminSeed:Password.
 // La base debe tener aplicada previamente la migración.
 using (var scope = app.Services.CreateScope())
 {
     var contexto = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    await AdminSeeder.CrearAdministradorInicialAsync(contexto, app.Configuration);
 
-    // Datos de prueba de vuelos: solo en Development y solo si todavía no hay vuelos.
-    if (app.Environment.IsDevelopment())
+    // Si la base no responde al arrancar, se avisa en el log pero la API igual levanta
+    // (antes se caía entera). Las peticiones fallarán con 500 hasta que vuelva la conexión.
+    try
+    {
+        await AdminSeeder.CrearAdministradorInicialAsync(contexto, app.Configuration);
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogError(ex, "No se pudo crear el administrador inicial. Revisá la conexión a la base.");
+    }
+
+    // Vuelos de ejemplo: solo si DatosDePrueba:Cargar es true. Agrega los que falten (por código),
+    // así que no duplica nada aunque la tabla ya tenga vuelos.
+    if (app.Configuration.GetValue<bool>("DatosDePrueba:Cargar"))
     {
         try
         {

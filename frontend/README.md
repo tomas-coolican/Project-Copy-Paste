@@ -21,8 +21,8 @@ Aplicación web (React 19 + Vite + Tailwind 4, JavaScript) del sistema de gesti�
 
    ```powershell
    Copy-Item .env.example .env
-   npm install
-   npm run dev
+   pnpm install
+   pnpm dev
    ```
 
    Abrí `http://localhost:5173`. El puerto es fijo: si está ocupado, Vite no arranca.
@@ -37,10 +37,12 @@ Aplicación web (React 19 + Vite + Tailwind 4, JavaScript) del sistema de gesti�
 
 | Comando | Qué hace |
 | ------- | -------- |
-| `npm run dev` | Servidor de desarrollo |
-| `npm run lint` | ESLint |
-| `npm run build` | Build de producción en `dist/` |
-| `npm run preview` | Sirve el build local |
+| `pnpm dev` | Servidor de desarrollo |
+| `pnpm lint` | ESLint |
+| `pnpm build` | Build de producción en `dist/` |
+| `pnpm test` | Tests con Vitest + Testing Library (`src/**/*.test.js(x)`) |
+| `pnpm test:watch` | Tests en modo watch |
+| `pnpm preview` | Sirve el build local |
 
 ## Estructura
 

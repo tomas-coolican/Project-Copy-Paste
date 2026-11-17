@@ -6,9 +6,11 @@ import ErrorMessage from '../components/ErrorMessage.jsx';
 import FormField from '../components/FormField.jsx';
 import Loading from '../components/Loading.jsx';
 import PageHeader from '../components/PageHeader.jsx';
+import Paginacion from '../components/Paginacion.jsx';
 import VueloRow from '../components/VueloRow.jsx';
 import useAsync from '../hooks/useAsync.js';
 import { formatHora } from '../utils/formatDate.js';
+import { paginar, TAMANIO_PAGINA } from '../utils/paginacion.js';
 
 const FILTROS_INICIALES = {
   texto: '',
@@ -34,10 +36,13 @@ function tieneFiltros(filtros) {
 export default function VuelosPage() {
   const { data: vuelos, error, loading, retrying, updatedAt, reload } = useAsync(vuelosApi.listar);
   const [filtros, setFiltros] = useState(FILTROS_INICIALES);
+  const [pagina, setPagina] = useState(1);
   const ahora = useMemo(() => updatedAt ?? new Date(), [updatedAt]);
 
+  // Cada cambio de filtro vuelve a la primera página.
   function cambiar(campo, valor) {
     setFiltros((previos) => ({ ...previos, [campo]: valor }));
+    setPagina(1);
   }
 
   const filtrados = useMemo(() => {
@@ -64,7 +69,14 @@ export default function VuelosPage() {
   }, [vuelos, filtros]);
 
   const hayFiltros = tieneFiltros(filtros);
-  const limpiar = () => setFiltros(FILTROS_INICIALES);
+  const limpiar = () => {
+    setFiltros(FILTROS_INICIALES);
+    setPagina(1);
+  };
+
+  // Paginación en el navegador sobre la lista ya filtrada (los filtros usan datos calculados,
+  // como el estado según el horario, por eso se resuelven acá y no en la API).
+  const pagina_ = paginar(filtrados, pagina, TAMANIO_PAGINA);
 
   let contenido;
   if (error && !vuelos) {
@@ -125,10 +137,18 @@ export default function VuelosPage() {
           <span>Estado</span>
         </div>
         <ol className="m-0 list-none p-0">
-          {filtrados.map((vuelo) => (
+          {pagina_.items.map((vuelo) => (
             <VueloRow key={vuelo.id} vuelo={vuelo} ahora={ahora} />
           ))}
         </ol>
+        <Paginacion
+          tone="ink"
+          pagina={pagina_.pagina}
+          totalPaginas={pagina_.totalPaginas}
+          total={pagina_.total}
+          tamanio={TAMANIO_PAGINA}
+          onCambiar={setPagina}
+        />
       </>
     );
   }
@@ -223,7 +243,7 @@ export default function VuelosPage() {
 
           {vuelos && filtrados.length > 0 && (
             <p className="m-0 mt-4 border-t border-line-inverse pt-4 font-mono text-app-label uppercase text-ink-inverse-muted">
-              Mostrando {filtrados.length} de {vuelos.length} · ordenadas por salida
+              {filtrados.length} de {vuelos.length} {vuelos.length === 1 ? 'vuelo coincide' : 'vuelos coinciden'} con los filtros · ordenados por salida
             </p>
           )}
         </div>
