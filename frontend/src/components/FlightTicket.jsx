@@ -1,5 +1,5 @@
 import useReveal from '../hooks/useReveal.js';
-import { formatCurrency, formatMonto } from '../utils/formatCurrency.js';
+import { formatCurrency } from '../utils/formatCurrency.js';
 import { formatDuracion, formatFecha, formatFechaLarga, formatHora } from '../utils/formatDate.js';
 import { sonCodigos } from '../utils/vuelos.js';
 import Barcode from './Barcode.jsx';
@@ -19,14 +19,12 @@ function Campo({ label, className = '', children }) {
 }
 
 function TicketBody({ vuelo, footer, showcase }) {
-  const horario = showcase ? 'ticket-body__time text-lg' : 'text-lg';
-  const secundario = showcase ? 'ticket-body__secondary text-[19px]' : 'text-[19px]';
   const estado = showcase
     ? <SampleStatus estado={vuelo.estado} className="ticket-body__status text-app-body-sm font-semibold" />
-    : <StatusIndicator estado={vuelo.estado} size="md" />;
+    : <StatusIndicator estado={vuelo.estado} size="md" className="ticket-body__status" />;
 
   return (
-    <div className={`ticket-body flex flex-col justify-between gap-6 p-[clamp(24px,3vw,36px)] tbl:gap-7 ${showcase ? 'ticket-body--hierarchy' : ''}`}>
+    <div className="ticket-body ticket-body--hierarchy flex flex-col justify-between gap-6 p-[clamp(24px,3vw,36px)] tbl:gap-7">
           <dl className="m-0 grid grid-cols-2 gap-4 border-b border-line pb-5 tbl:grid-cols-4 max-[360px]:grid-cols-1 max-[360px]:gap-3">
             <Campo label="Estado">{estado}</Campo>
             <Campo label="Salida"><span className={`ticket-body__time whitespace-nowrap font-mono text-lg font-medium tracking-[-0.04em]`}>{formatHora(vuelo.fechaSalida)}</span></Campo>
@@ -39,7 +37,7 @@ function TicketBody({ vuelo, footer, showcase }) {
               <span className="mt-0.5 font-mono text-app-label uppercase text-ink-faint">de {vuelo.capacidad}</span>
             </Campo>
             <Campo label="Precio base">
-              <span className="ticket-body__primary font-mono text-[clamp(2.7rem,4.6vw,4.2rem)] font-medium leading-[0.9] tracking-[-0.04em]">{showcase ? formatCurrency(vuelo.precioBase) : formatMonto(vuelo.precioBase)}</span>
+              <span className="ticket-body__primary font-mono text-[clamp(2.7rem,4.6vw,4.2rem)] font-medium leading-[0.9] tracking-[-0.04em]">{formatCurrency(vuelo.precioBase)}</span>
               <span className="mt-0.5 font-mono text-app-label uppercase text-ink-faint">ARS</span>
             </Campo>
             <Campo label="Capacidad" className="border-t border-dashed border-line-strong pt-3.5 sm:pt-4">
@@ -82,7 +80,7 @@ export default function FlightTicket({ vuelo, footer, reveal = false, showcase =
     <article
       ref={ref}
       {...rest}
-      className={`grid grid-cols-1 grid-rows-[auto_1px_auto] overflow-hidden rounded-ticket bg-surface shadow-soft tbl:grid-cols-[minmax(0,0.62fr)_1px_minmax(0,1.38fr)] tbl:grid-rows-none ${showcase ? 'flight-ticket--showcase' : ''} ${animacion} ${className}`}
+      className={`grid grid-cols-1 grid-rows-[auto_1px_auto] overflow-hidden rounded-ticket bg-surface shadow-soft tbl:grid-cols-[minmax(0,0.62fr)_1px_minmax(0,1.38fr)] tbl:grid-rows-none ${animacion} ${className}`}
     >
       <div className="flex flex-col gap-[18px] bg-surface-tint p-[clamp(24px,3vw,36px)] tbl:min-h-[370px] tbl:gap-[22px]">
         <div>

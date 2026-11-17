@@ -195,41 +195,41 @@
   }
 }
 
-.ticket-body--hierarchy .ticket-body__time {
-  font-size: 22px;
-}
-
-.flight-ticket--showcase .ticket-body--hierarchy {
+.ticket-body--hierarchy {
   padding: clamp(22px, 2.6vw, 30px);
   gap: 1.25rem;
 }
 
-.flight-ticket--showcase .ticket-body--hierarchy > dl:first-child {
+.ticket-body__time {
+  font-size: 22px;
+}
+
+.ticket-body--hierarchy > dl:first-child {
   padding-bottom: 1rem;
 }
 
-.flight-ticket--showcase .ticket-body__primary {
+.ticket-body__primary {
   font-size: clamp(2.65rem, 4.3vw, 4rem);
 }
 
-.ticket-body--hierarchy .ticket-body__secondary {
+.ticket-body__secondary {
   font-size: 34px;
 }
 
-.ticket-body--hierarchy .ticket-body__metrics {
+.ticket-body__metrics {
   padding-bottom: 0;
   row-gap: 16px;
 }
 
-.flight-ticket--showcase .ticket-body__metrics > div[class*='border-t'] {
+.ticket-body__metrics > div[class*='border-t'] {
   padding-top: 12px;
 }
 
-.flight-ticket--showcase .ticket-body--hierarchy > div:last-child {
+.ticket-body--hierarchy > div:last-child {
   padding-top: 12px;
 }
 
-.ticket-body--hierarchy .ticket-body__status {
+.ticket-body__status {
   font-size: 14px;
   font-weight: 600;
 }
