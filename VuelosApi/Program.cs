@@ -121,6 +121,13 @@ app.MapControllers();
 // Health Check para Render. No requiere conexión con la base de datos.
 app.MapGet("/health", () => Results.Ok(new { status = "Healthy" }));
 
+app.MapGet("/", () => Results.Ok(new
+{
+    mensaje = "API de vuelos funcionando",
+    documentacion = "/swagger",
+    estado = "/health"
+}));
+
 
 // El seed es opcional: solo crea el administrador si se configuraron AdminSeed:Email y AdminSeed:Password.
 // La base debe tener aplicada previamente la migración.
