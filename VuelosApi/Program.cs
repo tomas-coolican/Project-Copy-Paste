@@ -107,13 +107,8 @@ var app = builder.Build();
 // Manejo global de errores: cualquier excepción no controlada sale como ProblemDetails.
 app.UseMiddleware<ApiExceptionMiddleware>();
 
-// Swagger: siempre en desarrollo. En producción (deploy) solo si Swagger:Habilitar es true,
-// para poder mostrarlo en la demo (variable de entorno Swagger__Habilitar=true).
-if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("Swagger:Habilitar"))
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseCors("FrontendPolicy");
 
