@@ -24,7 +24,11 @@ function PaseDestacado({ vuelo }) {
         { label: "Salida", value: formatHora(vuelo.fechaSalida) },
         { label: "Asientos", value: vuelo.asientosDisponibles },
       ]}
-      serial={`${vuelo.numeroVuelo.replace(/\s+/g, "")} · ${formatFecha(vuelo.fechaSalida).replace(/\s+\d{4}$/, "").toUpperCase()}`}
+      serial={`${vuelo.numeroVuelo.replace(/\s+/g, "")} · ${formatFecha(
+        vuelo.fechaSalida,
+      )
+        .replace(/\s+\d{4}$/, "")
+        .toUpperCase()}`}
       className="relative mx-3 -mt-[46px] w-[calc(100%-24px)] animate-pass-in [animation-delay:400ms] sm:absolute sm:bottom-8 sm:left-4 sm:mx-0 sm:mt-0 sm:w-[min(340px,calc(100%-32px))] min-[941px]:bottom-[42px] min-[941px]:left-[clamp(-36px,-2.5vw,-18px)] min-[941px]:w-[min(342px,78%)]"
     />
   );
@@ -83,10 +87,6 @@ export default function Hero({ destacado, isAuthenticated }) {
               height="1500"
               className="block aspect-4/5 w-full animate-settle bg-surface-band object-cover object-center sm:max-[940px]:aspect-5/4"
             />
-            <figcaption className="flex justify-between gap-4 pt-2.5 font-mono text-app-label uppercase tracking-[0.08em] text-ink-faint max-sm:hidden">
-              <span>EZE · Terminal A</span>
-              <span>18:42</span>
-            </figcaption>
           </figure>
 
           {destacado && <PaseDestacado vuelo={destacado} />}

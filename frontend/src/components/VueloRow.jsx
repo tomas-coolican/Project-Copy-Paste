@@ -5,7 +5,7 @@ import Icon from './Icon.jsx';
 import StatusIndicator from './StatusIndicator.jsx';
 
 const GRID =
-  "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 border-b border-line-inverse py-4 transition-colors duration-(--duration-state) [grid-template-areas:'flight_status'_'route_route'_'time_seats'] hover:bg-surface-band/5 tbl:min-h-[68px] tbl:grid-cols-[96px_minmax(0,1fr)_84px_80px_130px_16px] tbl:gap-4 tbl:py-0 tbl:[grid-template-areas:'flight_route_time_seats_status_chevron']";
+  "flight-row-hover grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 border-b border-line-inverse py-4 [grid-template-areas:'flight_status'_'route_route'_'time_seats'] tbl:min-h-[68px] tbl:grid-cols-[96px_minmax(0,1fr)_84px_80px_130px_16px] tbl:gap-4 tbl:py-0 tbl:[grid-template-areas:'flight_route_time_seats_status_chevron']";
 
 /** Fila de vuelo del tablero. Toda la fila es el enlace al detalle. */
 export default function VueloRow({ vuelo, ahora, className = '' }) {

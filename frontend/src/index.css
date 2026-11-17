@@ -195,43 +195,73 @@
   }
 }
 
-.ticket-body--hierarchy .ticket-body__time {
-  font-size: 22px;
-}
-
-.flight-ticket--showcase .ticket-body--hierarchy {
+.ticket-body--hierarchy {
   padding: clamp(22px, 2.6vw, 30px);
   gap: 1.25rem;
 }
 
-.flight-ticket--showcase .ticket-body--hierarchy > dl:first-child {
+.ticket-body__time {
+  font-size: 22px;
+}
+
+.ticket-body--hierarchy > dl:first-child {
   padding-bottom: 1rem;
 }
 
-.flight-ticket--showcase .ticket-body__primary {
+.ticket-body__primary {
   font-size: clamp(2.65rem, 4.3vw, 4rem);
 }
 
-.ticket-body--hierarchy .ticket-body__secondary {
+.ticket-body__secondary {
   font-size: 34px;
 }
 
-.ticket-body--hierarchy .ticket-body__metrics {
+.ticket-body__metrics {
   padding-bottom: 0;
   row-gap: 16px;
 }
 
-.flight-ticket--showcase .ticket-body__metrics > div[class*='border-t'] {
+.ticket-body__metrics > div[class*='border-t'] {
   padding-top: 12px;
 }
 
-.flight-ticket--showcase .ticket-body--hierarchy > div:last-child {
+.ticket-body--hierarchy > div:last-child {
   padding-top: 12px;
 }
 
-.ticket-body--hierarchy .ticket-body__status {
+.ticket-body__status {
   font-size: 14px;
   font-weight: 600;
+}
+
+.flight-row-hover {
+  position: relative;
+  isolation: isolate;
+}
+
+.flight-row-hover::before {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  pointer-events: none;
+  background-image: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--color-accent) 10%, transparent),
+    transparent 45%
+  );
+  content: '';
+  opacity: 0;
+  transition: opacity var(--duration-state) var(--ease-out-expo);
+}
+
+.flight-row-hover:hover::before,
+.flight-row-hover:focus-visible::before {
+  opacity: 1;
+}
+
+.flight-row-hover > * {
+  position: relative;
+  z-index: 1;
 }
 
 .masthead {
@@ -247,6 +277,143 @@
   .masthead,
   .masthead--hidden {
     transition-duration: 0.01ms;
+  }
+}
+
+/* Landing stats grid follows the same structural breakpoints as the design brief. */
+.landing-stats-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.landing-stats-intro {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 16px 0;
+  border-bottom: 1px dashed var(--color-line-strong);
+}
+
+.landing-stats-title {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+.landing-stats-sample {
+  color: var(--color-ink-muted);
+  font-size: var(--text-app-label);
+  line-height: 1.2;
+}
+
+.landing-stats-cell {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 14px 0;
+  border-bottom: 1px dashed var(--color-line-strong);
+}
+
+.landing-stats-cell:last-child {
+  border-bottom: 0;
+}
+
+.landing-stats-cell dd {
+  text-align: right;
+}
+
+.landing-stats-cell dd span {
+  font-family: var(--font-sans);
+}
+
+@media (min-width: 620px) {
+  .landing-stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .landing-stats-intro {
+    grid-column: span 2;
+    padding: 18px 0;
+  }
+
+  .landing-stats-cell {
+    display: block;
+    padding: 16px 18px;
+  }
+
+  .landing-stats-cell:nth-child(2n) {
+    padding-left: 0;
+    border-right: 1px dashed var(--color-line-strong);
+  }
+
+  .landing-stats-cell:nth-child(2n + 1) {
+    padding-right: 0;
+  }
+
+  .landing-stats-cell:nth-last-child(-n + 2) {
+    border-bottom: 0;
+  }
+
+  .landing-stats-cell dd {
+    text-align: left;
+  }
+}
+
+@media (min-width: 1100px) {
+  .landing-stats-grid {
+    grid-template-columns: minmax(130px, 1.16fr) repeat(4, minmax(90px, 1fr)) minmax(170px, 1.15fr) minmax(90px, 0.9fr);
+  }
+
+  .landing-stats-intro {
+    grid-column: auto;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: space-between;
+    padding: 22px 20px 22px 0;
+    border-right: 1px dashed var(--color-line-strong);
+    border-bottom: 0;
+  }
+
+  .landing-stats-title {
+    font-size: clamp(0.875rem, 1.2vw, 1rem);
+  }
+
+  .landing-stats-cell {
+    padding: 20px 18px;
+    border-right: 1px dashed var(--color-line-strong);
+    border-bottom: 0;
+  }
+
+  .landing-stats-cell:nth-child(2n) {
+    padding-left: 18px;
+  }
+
+  .landing-stats-cell:nth-child(2n + 1) {
+    padding-right: 18px;
+  }
+
+  .landing-stats-cell dd {
+    font-size: clamp(1.9rem, 2.5vw, 2.3rem);
+  }
+
+  .landing-stats-cell dd span {
+    font-size: clamp(0.625rem, 0.78vw, 0.75rem);
+  }
+
+  .landing-stats-cell.landing-stats-cell--summary-start {
+    padding-left: 24px;
+    border-left: 1px solid var(--color-line-strong);
+  }
+
+  .landing-stats-cell:nth-child(4) {
+    border-right: 0;
+  }
+
+  .landing-stats-cell:last-child {
+    border-right: 0;
   }
 }
 

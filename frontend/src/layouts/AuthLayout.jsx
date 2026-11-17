@@ -1,7 +1,7 @@
 import { Link, Navigate, Outlet, useLocation } from 'react-router-dom';
-import Barcode from '../components/Barcode.jsx';
 import Masthead from '../components/Masthead.jsx';
 import useAuth from '../hooks/useAuth.js';
+import authBackground from '../assets/auth/auth-background.jpg';
 
 /**
  * Acceso y registro: una tarea por pantalla. La marca ocupa la mitad izquierda en escritorio
@@ -29,18 +29,20 @@ export default function AuthLayout() {
         }
       />
       <main id="contenido" className="grid min-h-[calc(100svh-var(--size-masthead))] md:grid-cols-[minmax(0,1fr)_minmax(0,560px)]">
-        <aside className="hidden flex-col justify-between bg-surface-tint px-14 py-14 md:flex">
-          <div>
-            <h2 className="m-0 max-w-[12ch] text-headline">
+        <aside className="relative isolate hidden overflow-hidden bg-surface-tint px-14 py-14 md:block">
+          <img
+            src={authBackground}
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 z-0 h-full w-full object-cover object-center"
+          />
+          <div className="relative z-20">
+            <h2 className="m-0 max-w-[12ch] text-headline text-ink">
               Todo el tablero, en una cuenta.
             </h2>
             <p className="m-0 mt-4 max-w-[42ch] text-app-body-sm text-ink-muted">
               Consultá vuelos, elegí asiento y seguí tus reservas desde el mismo lugar.
             </p>
-          </div>
-          <div aria-hidden="true">
-            <div className="mb-4 border-t border-dashed border-line-strong" />
-            <Barcode />
           </div>
         </aside>
 
